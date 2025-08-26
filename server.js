@@ -384,8 +384,8 @@ Jawab teka-teki berikut (Anda punya *3* kesempatan):
         if (gameData.type === 'tebak_angka') {
             const guess = parseInt(input);
             if (isNaN(guess)) { message.reply("🤖 Masukkan angka yang valid!"); return; }
-            if (guess < gameData.answer) { wrongAnswerMessage = "🤖 Terlalu rendah! Coba lagi."; }
-            else if (guess > gameData.answer) { wrongAnswerMessage = "🤖 Terlalu tinggi! Coba lagi."; }
+            if (guess < gameData.answer) { wrongAnswerMessage = "🤖 Salah! Coba lagi."; }
+            else if (guess > gameData.answer) { wrongAnswerMessage = "🤖 Salah! Coba lagi."; }
             else { isCorrect = true; }
         } else if (gameData.type === 'teka_teki') {
             if (input.toLowerCase().trim() === gameData.answer.toLowerCase()) { isCorrect = true; } 
