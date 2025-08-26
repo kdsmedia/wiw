@@ -56,7 +56,7 @@ class AltoBot {
     }
 
     replyWithMenuSuggestion(message, text) {
-        const footer = `\n\n=============================\n*00* untuk ke menu utama`;
+        const footer = `\n\n=============================\nketik *00* untuk ke *Menu* utama`;
         message.reply(text + footer);
     }
 
