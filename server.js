@@ -631,7 +631,7 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
         } else {
             message.reply("❌ Tugas dengan ID tersebut tidak ditemukan.");
         }
-    }
+    } 
     
     async handleSetBonus(message, user, minStr, maxStr) {
         const min = parseInt(minStr);
