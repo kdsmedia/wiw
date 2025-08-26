@@ -119,9 +119,9 @@ class AltoBot {
     }
 
     showMenu(message, user) {
-        let menu = `==============================
------------- 🏠 MENU UTAMA ---------------
-==============================
+        let menu = `=============================
+----------- 🏠 MENU UTAMA --------------
+=============================
 
 1. 👤 Profil
 2. 🏦 Withdraw
@@ -132,9 +132,9 @@ class AltoBot {
 7. 📞 Hubungi Owner
 8. 🤖 Hapus Riwayat Obrolan
 
-==============================
+=============================
 *Balas dengan nomor pilihan Anda (contoh: 1)*
-==============================`;
+=============================`;
         if (user.isAdmin) { menu += `\n\n--- 👑 MENU ADMIN ---\nGunakan perintah seperti biasa (contoh: */listusers*).`; }
         message.reply(menu);
     }
