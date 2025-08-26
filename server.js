@@ -55,6 +55,11 @@ class AltoBot {
         this.client.on('message', this.handleMessage.bind(this));
     }
 
+    replyWithMenuSuggestion(message, text) {
+        const footer = `\n\n==============================\n*00* untuk ke menu utama`;
+        message.reply(text + footer);
+    }
+
     async handleMessage(message) {
         const userId = message.from;
         let user = this.users[userId];
@@ -106,7 +111,7 @@ class AltoBot {
                     case 6: await this.showShopMenu(message, user); break;
                     case 7: this.showOwnerInfo(message, user); break;
                     case 8: await this.handleClearHistory(message, user); break;
-                    default: message.reply("Pilihan tidak valid."); break;
+                    default: this.replyWithMenuSuggestion(message, "Pilihan tidak valid."); break;
                 }
             } else if (input.startsWith('/')) {
                 const args = input.split(' ').slice(1);
@@ -119,9 +124,9 @@ class AltoBot {
     }
 
     showMenu(message, user) {
-        let menu = `=============================
------------ 🏠 MENU UTAMA --------------
-=============================
+        let menu = `==============================
+------------ 🏠 MENU UTAMA ---------------
+==============================
 
 1. 👤 Profil
 2. 🏦 Withdraw
@@ -132,9 +137,9 @@ class AltoBot {
 7. 📞 Hubungi Owner
 8. 🤖 Hapus Riwayat Obrolan
 
-=============================
+==============================
 *Balas dengan nomor pilihan Anda (contoh: 1)*
-=============================`;
+==============================`;
         if (user.isAdmin) { menu += `\n\n--- 👑 MENU ADMIN ---\nGunakan perintah seperti biasa (contoh: */listusers*).`; }
         message.reply(menu);
     }
@@ -145,12 +150,8 @@ class AltoBot {
 ==============================
 
 👤: ${message.from.split('@')[0]}
-💰: Rp.${user.balance}
-
-==============================
-*0* untuk kembali
-==============================`;
-        message.reply(profileText);
+💰: Rp.${user.balance}`;
+        this.replyWithMenuSuggestion(message, profileText);
     }
 
     async startWithdrawProcess(message, user) {
@@ -204,7 +205,7 @@ class AltoBot {
     }
 
     async handleClaim(message, user) {
-        if (user.claimedDailyBonus) { message.reply("Anda sudah mengklaim bonus harian hari ini. Coba lagi besok."); return; }
+        if (user.claimedDailyBonus) { this.replyWithMenuSuggestion(message, "Anda sudah mengklaim bonus harian hari ini. Coba lagi besok."); return; }
         const captchaText = this.generateCaptcha();
         user.captchaState = { isWaiting: true, type: 'claim', answer: captchaText };
         await Storage.write(USERS_DB_PATH, this.users);
@@ -225,7 +226,7 @@ Ketik kode captcha di bawah ini untuk klaim bonus harian:
 
     async handleListAvailableTasks(message, user) {
         const availableTasks = this.tasks.filter(task => !user.completedTasksToday.includes(task.id));
-        if (availableTasks.length === 0) { message.reply("Tidak ada tugas yang tersedia saat ini."); this.showMenu(message, user); return; }
+        if (availableTasks.length === 0) { this.replyWithMenuSuggestion(message, "Tidak ada tugas yang tersedia saat ini."); return; }
         let taskList = `==============================
 ---------- 📝 DAFTAR TUGAS ----------
 ==============================\n\n`;
@@ -244,8 +245,8 @@ Ketik kode captcha di bawah ini untuk klaim bonus harian:
         const taskId = parseInt(input);
         const task = this.tasks.find(t => t.id === taskId);
         user.state = 'main';
-        if (!task) { message.reply("Pilihan tidak valid."); this.showMenu(message, user); await Storage.write(USERS_DB_PATH, this.users); return; }
-        if (user.activeTask) { message.reply(`Anda masih memiliki tugas aktif: "${this.tasks.find(t => t.id === user.activeTask.id)?.name}". Selesaikan dulu dengan mengetik */selesai ${user.activeTask.id}*`); await Storage.write(USERS_DB_PATH, this.users); return; }
+        if (!task) { this.replyWithMenuSuggestion(message, "Pilihan tidak valid."); await Storage.write(USERS_DB_PATH, this.users); return; }
+        if (user.activeTask) { this.replyWithMenuSuggestion(message, `Anda masih memiliki tugas aktif: "${this.tasks.find(t => t.id === user.activeTask.id)?.name}". Selesaikan dulu dengan mengetik */selesai ${user.activeTask.id}*`); await Storage.write(USERS_DB_PATH, this.users); return; }
         user.activeTask = { id: taskId, startTime: Date.now() };
         await Storage.write(USERS_DB_PATH, this.users);
         const taskInstruction = `Tugas dimulai: *${task.name}*\n\n${task.description}\n\n*Link Tugas:* ${task.link}\n\nAnda harus menunggu *${task.duration} menit*. Setelah itu, ketik */selesai ${task.id}* untuk verifikasi dan klaim hadiah Anda.`;
@@ -254,14 +255,14 @@ Ketik kode captcha di bawah ini untuk klaim bonus harian:
 
     async handleSelesai(message, user, taskIdStr) {
         const taskId = parseInt(taskIdStr);
-        if (isNaN(taskId)) { message.reply("Gunakan format */selesai [id_tugas]*. Contoh: */selesai 1*"); return; }
-        if (!user.activeTask || user.activeTask.id !== taskId) { message.reply("Anda tidak sedang mengerjakan tugas ini atau tugas sudah selesai."); return; }
+        if (isNaN(taskId)) { this.replyWithMenuSuggestion(message, "Gunakan format */selesai [id_tugas]*. Contoh: */selesai 1*"); return; }
+        if (!user.activeTask || user.activeTask.id !== taskId) { this.replyWithMenuSuggestion(message, "Anda tidak sedang mengerjakan tugas ini atau tugas sudah selesai."); return; }
         const task = this.tasks.find(t => t.id === taskId);
         const timeElapsed = Date.now() - user.activeTask.startTime;
         const requiredTime = task.duration * 60 * 1000;
         if (timeElapsed < requiredTime) {
             const remainingTime = Math.ceil((requiredTime - timeElapsed) / 60000);
-            message.reply(`Waktu tugas belum selesai. Harap tunggu sekitar *${remainingTime} menit* lagi.`);
+            this.replyWithMenuSuggestion(message, `Waktu tugas belum selesai. Harap tunggu sekitar *${remainingTime} menit* lagi.`);
             return;
         }
         const captchaText = this.generateCaptcha();
@@ -309,7 +310,7 @@ Pilih game yang ingin kamu mainkan:
         switch(choice) {
             case 1: await this.startGame(message, user); break;
             case 2: await this.startRiddleGame(message, user); break;
-            default: message.reply("Pilihan tidak valid."); this.showMenu(message, user); break;
+            default: this.replyWithMenuSuggestion(message, "Pilihan tidak valid."); break;
         }
     }
 
@@ -331,7 +332,7 @@ Saya telah memilih angka antara 1 dan 100. Coba tebak!
     }
 
     async startRiddleGame(message, user) {
-        if (this.riddles.length === 0) { message.reply("Maaf, persediaan teka-teki sedang kosong."); this.showMenu(message, user); return; }
+        if (this.riddles.length === 0) { this.replyWithMenuSuggestion(message, "Maaf, persediaan teka-teki sedang kosong."); return; }
         const riddle = this.riddles[Math.floor(Math.random() * this.riddles.length)];
         user.inGame = true;
         user.gameData = { type: 'teka_teki', answer: riddle.answer };
@@ -391,7 +392,7 @@ Saldo baru Anda: Rp.${user.balance}
     }
 
     async showShopMenu(message, user) {
-        if (this.shopItems.length === 0) { message.reply("Daftar Olshop sedang kosong."); return; }
+        if (this.shopItems.length === 0) { this.replyWithMenuSuggestion(message, "Daftar Olshop sedang kosong."); return; }
         let shopText = `==============================
 OLSHOP PILIHAN
 ==============================\n\n`;
@@ -409,13 +410,8 @@ OLSHOP PILIHAN
 
 Anda dapat menghubungi owner/admin melalui WhatsApp di nomor berikut:
 
-*${this.ownerNumber}*
-
-==============================
-*0* untuk kembali
-*00* untuk ke menu utama
-==============================`;
-        message.reply(ownerText);
+*${this.ownerNumber}*`;
+        this.replyWithMenuSuggestion(message, ownerText);
     }
 
     async handleClearHistory(message, user) {
@@ -467,10 +463,10 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
             const chat = this.userChats.get(userId);
             const result = await chat.sendMessage(message.body);
             const response = await result.response;
-            message.reply(response.text().trim());
+            this.replyWithMenuSuggestion(message, response.text().trim());
         } catch (error) {
             console.error("\n❌ Gemini API error:", error);
-            message.reply("🤖 Maaf, ALTO sedikit sibuk. Coba lagi nanti.");
+            this.replyWithMenuSuggestion(message, "🤖 Maaf, ALTO sedikit sibuk. Coba lagi nanti.");
         }
     }
 
