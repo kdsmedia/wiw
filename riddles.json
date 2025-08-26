@@ -87,7 +87,7 @@
   { "question": "Aku selalu membesar saat kau tinggalkan, tapi mengecil saat kau hampiri. Siapakah aku?", "answer": "bayangan" },
   { "question": "Aku punya banyak warna tapi tidak bisa dilihat di malam hari. Siapakah aku?", "answer": "pelangi" },
   { "question": "Aku bisa berlari tapi tidak bisa berjalan. Siapakah aku?", "answer": "air" },
-  { "question": "Aku bisa membuka jalan tanpa kunci. Siapakah aku?", "answer": "senyum" }
+  { "question": "Aku bisa membuka jalan tanpa kunci. Siapakah aku?", "answer": "senyum" },
     { "question": "Aku punya kepala tapi tidak punya pikiran. Aku bisa ditaruh di atas meja. Siapakah aku?", "answer": "paku" },
   { "question": "Aku berlari tanpa pernah lelah, aku mengalir tanpa pernah berhenti. Siapakah aku?", "answer": "sungai" },
   { "question": "Aku bisa membuatmu tertidur, tapi aku sendiri tidak pernah tidur. Siapakah aku?", "answer": "obat tidur" },
@@ -184,7 +184,7 @@
   { "question": "Aku bisa membuatmu tersenyum meski kau sedang menangis. Siapakah aku?", "answer": "kenangan lucu" },
   { "question": "Aku bisa memelukmu tanpa tangan. Siapakah aku?", "answer": "selimut" },
   { "question": "Aku bisa menghantarkan cahaya tanpa listrik. Siapakah aku?", "answer": "bulan" },
-  { "question": "Aku bisa ada di laut tapi bukan air. Siapakah aku?", "answer": "kapal" }
+  { "question": "Aku bisa ada di laut tapi bukan air. Siapakah aku?", "answer": "kapal" },
     { "question": "Aku berlari tanpa pernah lelah, aku melewati siang dan malam. Siapakah aku?", "answer": "waktu" },
   { "question": "Aku punya tempat duduk, tapi tidak punya kursi. Aku punya rel, tapi tidak punya roda. Siapakah aku?", "answer": "kereta" },
   { "question": "Aku bisa terbang, tapi aku bukan burung. Aku bisa mengirimkan pesan, tapi aku bukan manusia. Siapakah aku?", "answer": "pesawat kertas" },
@@ -275,7 +275,7 @@
   { "question": "Aku bisa memisahkan dua dunia tapi aku bukan pintu. Siapakah aku?", "answer": "cermin" },
   { "question": "Aku bisa ada di hatimu meski tak terlihat. Siapakah aku?", "answer": "kenangan" },
   { "question": "Aku bisa membuatmu kuat meski aku tak terlihat. Siapakah aku?", "answer": "semangat" },
-  { "question": "Aku bisa membuatmu lemah meski aku tak menyentuh. Siapakah aku?", "answer": "rasa sakit" }
+  { "question": "Aku bisa membuatmu lemah meski aku tak menyentuh. Siapakah aku?", "answer": "rasa sakit" },
     { "question": "Aku bisa memantulkan bayanganmu tapi bukan dirimu. Siapakah aku?", "answer": "cermin" },
   { "question": "Aku selalu berubah bentuk tapi tetap sama. Siapakah aku?", "answer": "air" },
   { "question": "Aku ada di langit, bisa muncul siang dan malam, tapi tidak selalu terlihat. Siapakah aku?", "answer": "bulan" },
@@ -370,7 +370,7 @@
   { "question": "Aku bisa dipakai menulis tapi bukan pensil. Siapakah aku?", "answer": "pena" },
   { "question": "Aku bisa membuatmu basah tapi aku bukan air. Siapakah aku?", "answer": "keringat" },
   { "question": "Aku bisa dipakai untuk membuka botol. Siapakah aku?", "answer": "pembuka botol" },
-  { "question": "Aku bisa mengisi baterai tapi aku bukan listrik. Siapakah aku?", "answer": "charger" }
+  { "question": "Aku bisa mengisi baterai tapi aku bukan listrik. Siapakah aku?", "answer": "charger" },
     { "question": "Aku bisa bergetar tanpa disentuh, sering dipanggil tapi tak pernah datang sendiri. Siapakah aku?", "answer": "telepon" },
   { "question": "Aku kecil di kantongmu tapi bisa menyimpan dunia. Siapakah aku?", "answer": "ponsel" },
   { "question": "Aku ada di saku tapi bukan koin, aku bisa bercahaya tanpa api. Siapakah aku?", "answer": "senter" },
@@ -462,7 +462,7 @@
   { "question": "Aku bisa membuatmu tersenyum hanya dengan ingatan. Siapakah aku?", "answer": "foto" },
   { "question": "Aku bisa membuatmu menangis meski aku hanya cerita. Siapakah aku?", "answer": "film sedih" },
   { "question": "Aku bisa membuatmu bersemangat hanya dengan alunan. Siapakah aku?", "answer": "musik" },
-  { "question": "Aku bisa membuatmu lupa waktu meski aku tidak pernah berhenti. Siapakah aku?", "answer": "permainan" }
+  { "question": "Aku bisa membuatmu lupa waktu meski aku tidak pernah berhenti. Siapakah aku?", "answer": "permainan" },
     { "question": "Aku punya kulit tapi bukan tubuh, aku bisa dibuka tapi tidak pernah ditutup lagi. Siapakah aku?", "answer": "buku" },
   { "question": "Semakin banyak orang mengambil dariku, aku tetap tidak pernah habis. Apakah aku?", "answer": "pengetahuan" },
   { "question": "Aku bisa membuatmu menangis meski aku hanya diam di dapur. Siapakah aku?", "answer": "bawang" },
@@ -553,7 +553,7 @@
   { "question": "Aku bisa berubah bentuk di langit setiap saat. Siapakah aku?", "answer": "awan" },
   { "question": "Aku bisa membuatmu berlari tanpa tujuan. Siapakah aku?", "answer": "takut" },
   { "question": "Aku bisa menyinari bumi tanpa api. Siapakah aku?", "answer": "matahari" },
-  { "question": "Aku bisa mengguncang bumi tanpa tangan. Siapakah aku?", "answer": "gempa" }
+  { "question": "Aku bisa mengguncang bumi tanpa tangan. Siapakah aku?", "answer": "gempa" },
     { "question": "Aku kecil di malam hari, besar di siang hari, tapi hilang saat gelap. Siapakah aku?", "answer": "bayangan" },
   { "question": "Aku bisa berlari tanpa bergerak, bisa menari tanpa kaki. Siapakah aku?", "answer": "api" },
   { "question": "Aku selalu naik tanpa pernah turun, tapi bukan umur. Siapakah aku?", "answer": "asap" },
@@ -650,7 +650,7 @@
   { "question": "Aku bisa bergetar tanpa disentuh. Siapakah aku?", "answer": "suara" },
   { "question": "Aku bisa membekukan meski tanpa es. Siapakah aku?", "answer": "ketakutan" },
   { "question": "Aku bisa terbelah tapi tetap satu. Siapakah aku?", "answer": "hati" },
-  { "question": "Aku bisa menutup bumi tanpa jari. Siapakah aku?", "answer": "malam" }
+  { "question": "Aku bisa menutup bumi tanpa jari. Siapakah aku?", "answer": "malam" },
     { "question": "Aku berlari tanpa kaki, aku berbisik tanpa mulut. Siapakah aku?", "answer": "angin" },
   { "question": "Apa yang tumbuh ke bawah, bukan ke atas?", "answer": "akar" },
   { "question": "Aku punya sayap tapi tidak bisa terbang, aku bisa berlari di jalanan. Siapakah aku?", "answer": "mobil balap" },
@@ -749,7 +749,7 @@
   { "question": "Aku bisa membuatmu merasa rendah meski aku tinggi. Siapakah aku?", "answer": "gunung" },
   { "question": "Aku bisa membuatmu merasa kecil meski aku bukan manusia. Siapakah aku?", "answer": "lautan" },
   { "question": "Aku bisa membuatmu merasa besar meski aku sederhana. Siapakah aku?", "answer": "kebaikan kecil" },
-  { "question": "Aku bisa membuatmu merasa dekat meski berjauhan. Siapakah aku?", "answer": "surat" }
+  { "question": "Aku bisa membuatmu merasa dekat meski berjauhan. Siapakah aku?", "answer": "surat" },
     { "question": "Aku tidak punya kaki, tapi aku bisa berlari ke mana saja. Siapakah aku?", "answer": "air" },
   { "question": "Semakin banyak aku diambil, semakin besar aku menjadi. Apakah aku?", "answer": "lubang" },
   { "question": "Aku bisa melompat tanpa kaki dan berlari tanpa sayap. Siapakah aku?", "answer": "bola" },
@@ -845,7 +845,7 @@
   { "question": "Aku bisa berjalan di laut tanpa basah. Siapakah aku?", "answer": "kapal" },
   { "question": "Aku bisa berbicara dalam diam. Siapakah aku?", "answer": "tatapan" },
   { "question": "Aku bisa menangkap tapi tidak bisa menggenggam. Siapakah aku?", "answer": "kamera" },
-  { "question": "Aku bisa memotret tanpa lensa. Siapakah aku?", "answer": "mata" }
+  { "question": "Aku bisa memotret tanpa lensa. Siapakah aku?", "answer": "mata" },
     { "question": "Aku berputar di meja, membuatmu kalah atau menang, tapi aku bukan koin. Siapakah aku?", "answer": "gasing" },
   { "question": "Aku tak terlihat, namun rumah dan ponselmu terhubung karenaku. Siapakah aku?", "answer": "wifi" },
   { "question": "Aku menjaga gerbang tanpa kunci, hanya pertanyaan acak. Siapakah aku?", "answer": "captcha" },
@@ -952,7 +952,7 @@
   { "question": "Aku kain kecil untuk membersihkan lensa. Siapakah aku?", "answer": "lap mikrofiber" },
   { "question": "Aku penutup tipis di atas kamera laptop. Siapakah aku?", "answer": "slider kamera" },
   { "question": "Aku gembok kecil pada browser, tanda aman. Siapakah aku?", "answer": "ikon HTTPS" },
-  { "question": "Aku wajah kecil yang menggantikan kata-kata. Siapakah aku?", "answer": "emoji" }
+  { "question": "Aku wajah kecil yang menggantikan kata-kata. Siapakah aku?", "answer": "emoji" },
     { "question": "Aku selalu menghubungkan dua hal yang berjauhan, tapi aku sendiri tidak pernah bergerak. Siapakah aku?", "answer": "jembatan" },
   { "question": "Aku bisa menampung ribuan orang, tapi aku tidak punya pintu. Apakah aku?", "answer": "stadion" },
   { "question": "Aku punya huruf tapi tidak bisa menulis surat. Apakah aku?", "answer": "abjad" },
@@ -1042,7 +1042,7 @@
   { "question": "Aku bisa melingkari bumi tanpa bergerak. Siapakah aku?", "answer": "garis khatulistiwa" },
   { "question": "Aku bisa menyejukkan bumi tapi aku bukan hujan. Siapakah aku?", "answer": "awan" },
   { "question": "Aku bisa menutup matahari sebentar. Siapakah aku?", "answer": "gerhana" },
-  { "question": "Aku bisa membuatmu tinggi tanpa berdiri. Siapakah aku?", "answer": "kursi" }
+  { "question": "Aku bisa membuatmu tinggi tanpa berdiri. Siapakah aku?", "answer": "kursi" },
     { "question": "Aku punya banyak sisi, tapi tetap bulat. Siapakah aku?", "answer": "bola" },
   { "question": "Apa yang semakin penuh semakin ringan?", "answer": "balon" },
   { "question": "Aku berputar tanpa lelah, tapi tidak pernah berpindah tempat. Siapakah aku?", "answer": "kipas angin" },
@@ -1134,7 +1134,7 @@
   { "question": "Aku bisa mati tanpa pernah lahir. Siapakah aku?", "answer": "lampu padam" },
   { "question": "Aku bisa membuatmu kuat tanpa otot. Siapakah aku?", "answer": "semangat" },
   { "question": "Aku bisa masuk telinga tanpa suara. Siapakah aku?", "answer": "udara" },
-  { "question": "Aku bisa menutup mata tapi bukan kelopak. Siapakah aku?", "answer": "tangan" }
+  { "question": "Aku bisa menutup mata tapi bukan kelopak. Siapakah aku?", "answer": "tangan" },
     { "question": "Aku bisa bergerak meski tak punya otot, bisa berlari meski tak punya kaki. Siapakah aku?", "answer": "aliran listrik" },
   { "question": "Aku tidak bisa dilihat, tapi bisa dirasakan. Aku bisa menyejukkan atau membuatmu menggigil. Siapakah aku?", "answer": "angin" },
   { "question": "Aku bisa membuatmu tersenyum atau menangis, meski aku hanya bayangan dari kisah. Siapakah aku?", "answer": "film" },
@@ -1228,7 +1228,7 @@
   { "question": "Aku bisa menjaga rahasia malam, meski aku hanya cahaya kecil. Siapakah aku?", "answer": "kunang-kunang" },
   { "question": "Aku bisa membuatmu lupa waktu, meski aku hanya gelas kecil. Siapakah aku?", "answer": "kopi" },
   { "question": "Aku bisa membuatmu jatuh, meski aku tak punya tangan. Siapakah aku?", "answer": "lubang" },
-  { "question": "Aku bisa membuatmu mendengar jauh, meski aku hanya kabel. Siapakah aku?", "answer": "telepon" }
+  { "question": "Aku bisa membuatmu mendengar jauh, meski aku hanya kabel. Siapakah aku?", "answer": "telepon" },
     { "question": "Aku punya roda tapi tak pernah melaju, aku menjaga rumah agar tetap sejuk. Siapakah aku?", "answer": "kipas angin gantung" },
   { "question": "Aku terbuat dari tanah liat, menampung bunga, namun bukan pot. Siapakah aku?", "answer": "vas" },
   { "question": "Aku tipis, menempel di jendela untuk mengurangi panas. Siapakah aku?", "answer": "film kaca anti panas" },
@@ -1316,7 +1316,7 @@
   { "question": "Aku benda kecil yang mengalirkan air dari atap ke selokan. Siapakah aku?", "answer": "talang air kecil" },
   { "question": "Aku benda kecil yang memancarkan aroma di ruangan. Siapakah aku?", "answer": "diffuser" },
   { "question": "Aku benda kecil yang menyalakan kompor gas secara otomatis. Siapakah aku?", "answer": "pemantik otomatis" },
-  { "question": "Aku benda kecil yang mempertahankan kelembapan dalam kotak. Siapakah aku?", "answer": "silica gel" }
+  { "question": "Aku benda kecil yang mempertahankan kelembapan dalam kotak. Siapakah aku?", "answer": "silica gel" },
     { "question": "Aku rumah yang bisa berpindah-pindah, membawa semua barangmu. Siapakah aku?", "answer": "koper" },
   { "question": "Aku bunga yang tumbuh dari biji kecil, sering dipakai di teh. Siapakah aku?", "answer": "melati" },
   { "question": "Aku alat untuk melihat benda jauh di langit pada malam hari. Siapakah aku?", "answer": "teleskop" },
