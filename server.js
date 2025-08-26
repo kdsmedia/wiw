@@ -36,7 +36,7 @@ class AltoBot {
     }
 
     async loadData() {
-        this.config = await Storage.read(CONFIG_PATH) || { adminPassword: 'admin123', dailyBonus: { min: 100, max: 500 } };
+        this.config = await Storage.read(CONFIG_PATH) || { adminPassword: 'admin123', dailyBonus: { min: 50, max: 500 } };
         this.users = await Storage.read(USERS_DB_PATH) || {};
         this.tasks = await Storage.read(TASKS_DB_PATH) || [];
         this.shopItems = await Storage.read(SHOP_DB_PATH) || [];
@@ -56,7 +56,7 @@ class AltoBot {
     }
 
     replyWithMenuSuggestion(message, text) {
-        const footer = `\n\n==============================\n*00* untuk ke menu utama`;
+        const footer = `\n\n==============================\nketik *00* untuk ke *menu* utama`;
         message.reply(text + footer);
     }
 
@@ -125,20 +125,20 @@ class AltoBot {
 
     showMenu(message, user) {
         let menu = `==============================
------------- 🏠 MENU UTAMA ---------------
+------------ 🏠 MENU UTAMA --------------
 ==============================
 
 1. 👤 Profil
 2. 🏦 Withdraw
-3. 🎁 Klaim Bonus Harian
-4. 📝 Lihat & Kerjakan Tugas
+3. 🎁 Klaim Bonus
+4. 📝 Kerjakan Tugas
 5. 🎮 Main Game
-6. 🛒 Shop (Olshop Pilihan)
+6. 🛒 OlShop (Pilihan)
 7. 📞 Hubungi Owner
-8. 🤖 Hapus Riwayat Obrolan
+8. 🤖 Hapus Riwayat
 
 ==============================
-*Balas dengan nomor pilihan Anda (contoh: 1)*
+*Ketik nomor pilihan Anda (contoh: 1)*
 ==============================`;
         if (user.isAdmin) { menu += `\n\n--- 👑 MENU ADMIN ---\nGunakan perintah seperti biasa (contoh: */listusers*).`; }
         message.reply(menu);
@@ -167,8 +167,8 @@ class AltoBot {
 *Minimal penarikan adalah Rp.100.000*
 
 ==============================
-*0* untuk kembali
-*00* untuk ke menu utama
+ketik *0* untuk kembali
+ketik *00* untuk ke menu utama
 ==============================`;
         message.reply(withdrawText);
     }
@@ -220,8 +220,8 @@ Ketik kode captcha di bawah ini untuk klaim bonus harian:
 *Kode: ${captchaText}*
 
 ==============================
-*0* untuk kembali
-*00* untuk ke menu utama
+ketik *0* untuk kembali
+ketik *00* untuk ke menu utama
 ==============================`;
         message.reply(claimText);
     }
@@ -235,8 +235,8 @@ Ketik kode captcha di bawah ini untuk klaim bonus harian:
         availableTasks.forEach(task => { taskList += `*${task.id}.* ${task.name}\n*Hadiah:* Rp.${task.reward} | *Durasi:* ${task.duration} menit\n\n`; });
         taskList += `==============================
 *Balas dengan nomor tugas untuk memulai*
-*0* untuk kembali
-*00* untuk ke menu utama
+ketik *0* untuk kembali
+ketik *00* untuk ke menu utama
 ==============================`;
         user.state = 'memilih_tugas';
         await Storage.write(USERS_DB_PATH, this.users);
@@ -281,8 +281,8 @@ Ketik kode captcha di bawah ini:
 *Kode: ${captchaText}*
 
 ==============================
-*0* untuk kembali
-*00* untuk ke menu utama
+ketik *0* untuk kembali
+ketik *00* untuk ke menu utama
 ==============================`;
         message.reply(taskCaptchaText);
     }
@@ -301,7 +301,7 @@ Pilih game yang ingin kamu mainkan:
 
 ==============================
 *Balas dengan nomor pilihan Anda*
-*0* untuk kembali
+ketik *0* untuk kembali
 ==============================`;
         message.reply(gameMenuText);
     }
@@ -321,18 +321,18 @@ Pilih game yang ingin kamu mainkan:
         user.gameData = { 
             type: 'tebak_angka', 
             answer: Math.floor(Math.random() * 100) + 1,
-            attempts: 3
+            attempts: 5
         };
         await Storage.write(USERS_DB_PATH, this.users);
         const gameText = `==============================
 ------- 🔢 GAME TEBAK ANGKA -------
 ==============================
 
-Saya telah memilih angka antara 1 dan 100. Anda punya *3* kesempatan untuk menebak!
+Saya telah memilih angka antara 1 dan 100. Anda punya *5* kesempatan untuk menebak!
 
 ==============================
 *Ketik tebakan Anda (contoh: 50)*
-*0* untuk menyerah & kembali
+ketik *0* untuk menyerah & kembali
 ==============================`;
         message.reply(gameText);
     }
@@ -359,13 +359,13 @@ Saya telah memilih angka antara 1 dan 100. Anda punya *3* kesempatan untuk meneb
 ------- 🤔 GAME TEKA TEKI -------
 ==============================
 
-Jawab teka-teki berikut (Anda punya *3* kesempatan):
+Jawab teka-teki berikut (Anda punya *5* kesempatan):
 
 *${riddle.question}*
 
 ==============================
 *Ketik jawaban Anda*
-*0* untuk menyerah & kembali
+ketik *0* untuk menyerah & kembali
 ==============================`;
         message.reply(riddleText);
     }
@@ -413,7 +413,7 @@ Jawab teka-teki berikut (Anda punya *3* kesempatan):
         }
 
         if (isCorrect) {
-            const reward = gameData.type === 'tebak_angka' ? 250 : 300;
+            const reward = gameData.type === 'tebak_angka' ? 50 : 300;
             user.balance += reward; user.inGame = false;
             if (gameData.type === 'teka_teki') {
                 user.answeredRiddles.push(gameData.question);
@@ -442,7 +442,7 @@ OLSHOP PILIHAN
 ==============================\n\n`;
         this.shopItems.forEach(item => { shopText += `${item.id}. Belanja disini (${item.url})\n`; });
         shopText += `\n==============================
-0. Kembali
+ketik *0* untuk Kembali
 ==============================`;
         message.reply(shopText);
     }
@@ -464,7 +464,7 @@ Anda dapat menghubungi owner/admin melalui WhatsApp di nomor berikut:
 ------- 🤖 RIWAYAT DIHAPUS -------
 ==============================
 
-Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
+Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
         await message.reply(confirmationText);
         this.showMenu(message, user);
     }
@@ -524,7 +524,7 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
 
     async handleAdminCommands(message, user, commandName, args) {
         if (!user.isAdmin && commandName !== '/loginadmin') {
-            if (commandName.startsWith('/')) { message.reply("Perintah tidak dikenali. Coba /menu."); }
+            if (commandName.startsWith('/')) { message.reply("Perintah tidak dikenali. Coba ketik *00*."); }
             else { await this.getAiResponse(message); }
             return;
         }
@@ -637,7 +637,7 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
         const min = parseInt(minStr);
         const max = parseInt(maxStr);
         if (isNaN(min) || isNaN(max) || min > max) {
-            message.reply("Penggunaan salah. Contoh: /setbonus 100 500");
+            message.reply("Penggunaan salah. Contoh: /setbonus 50 500");
             return;
         }
         this.config.dailyBonus = { min, max };
