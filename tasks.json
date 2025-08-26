@@ -1,19 +1,28 @@
 [
   {
     "id": 1,
-    "name": "Kunjungi Situs Sponsor",
+    "name": "Kunjungi Sponsor",
     "description": "Klik link ini dan tunggu waktu mundur habis.",
-    "link": "https://www.google.com",
+    "link": "https://app.1406.my.id/",
     "duration": 5,
-    "reward": 200
+    "reward": 50
   },
   {
     "id": 2,
-    "name": "Tonton Video Promo",
+    "name": "Tonton Video",
     "description": "Tonton video promo kami sampai selesai.",
-    "link": "https://www.youtube.com",
-    "duration": 3,
+    "link": "https://www.youtube.com/watch?v=Ze_w7ac1u4w",
+    "duration": 5,
     "reward": 150
   }
+  {
+    "id": 3,
+    "name": "Tonton Video",
+    "description": "Tonton video promo kami sampai selesai.",
+    "link": "https://www.youtube.com/watch?v=RgQOqELcYZk",
+    "duration": 50,
+    "reward": 1000
+  }
+  
 ]
 
