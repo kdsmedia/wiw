@@ -10,7 +10,7 @@ const USERS_DB_PATH = './users.json';
 const TASKS_DB_PATH = './tasks.json';
 const CONFIG_PATH = './config.json';
 const SHOP_DB_PATH = './shop.json';
-const RIDDLES_DB_PATH = './riddles.json';
+// riddles.json sudah tidak diperlukan lagi
 
 class Storage {
     static async read(filePath) { try { await fs.access(filePath); const data = await fs.readFile(filePath, 'utf-8'); return JSON.parse(data); } catch (error) { return null; } }
@@ -24,7 +24,7 @@ class AltoBot {
             puppeteer: { headless: true, args: ['--no-sandbox'] },
             webVersionCache: { type: 'remote', remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html' }
         });
-        this.genAI = null; this.userChats = new Map(); this.users = {}; this.tasks = []; this.shopItems = []; this.riddles = []; this.config = {}; this.ownerNumber = "6285813899649";
+        this.genAI = null; this.userChats = new Map(); this.users = {}; this.tasks = []; this.shopItems = []; this.config = {}; this.ownerNumber = "6285813899649";
     }
 
     async initialize() {
@@ -40,7 +40,7 @@ class AltoBot {
         this.users = await Storage.read(USERS_DB_PATH) || {};
         this.tasks = await Storage.read(TASKS_DB_PATH) || [];
         this.shopItems = await Storage.read(SHOP_DB_PATH) || [];
-        this.riddles = await Storage.read(RIDDLES_DB_PATH) || [];
+        // riddles.json tidak dimuat lagi
         console.log("✅ Data berhasil dimuat.");
     }
 
@@ -56,7 +56,7 @@ class AltoBot {
     }
 
     replyWithMenuSuggestion(message, text) {
-        const footer = `\n\n=============================\nketik *00* untuk ke *Menu* utama`;
+        const footer = `\n\n==============================\n*00* untuk ke menu utama`;
         message.reply(text + footer);
     }
 
@@ -66,7 +66,7 @@ class AltoBot {
         const input = message.body.trim();
 
         if (!user) {
-            user = { balance: 0, isBlocked: false, lastLogin: new Date().toDateString(), claimedDailyBonus: false, completedTasksToday: [], isAdmin: false, captchaState: { isWaiting: false }, inGame: false, gameData: null, state: 'main', miningPower: 1, energy: 100, withdrawData: {}, activeTask: null };
+            user = { balance: 0, isBlocked: false, lastLogin: new Date().toDateString(), claimedDailyBonus: false, completedTasksToday: [], isAdmin: false, captchaState: { isWaiting: false }, inGame: false, gameData: null, state: 'main', miningPower: 1, energy: 100, withdrawData: {}, activeTask: null, answeredRiddles: [] };
             this.users[userId] = user;
             await Storage.write(USERS_DB_PATH, this.users);
             message.reply(`👋 Halo! Selamat datang di ALTO Bot. Akun baru telah dibuat untukmu.`);
@@ -124,9 +124,9 @@ class AltoBot {
     }
 
     showMenu(message, user) {
-        let menu = `=============================
------------ 🏠 MENU UTAMA --------------
-=============================
+        let menu = `==============================
+------------ 🏠 MENU UTAMA ---------------
+==============================
 
 1. 👤 Profil
 2. 🏦 Withdraw
@@ -137,17 +137,17 @@ class AltoBot {
 7. 📞 Hubungi Owner
 8. 🤖 Hapus Riwayat Obrolan
 
-=============================
+==============================
 *Balas dengan nomor pilihan Anda (contoh: 1)*
-=============================`;
+==============================`;
         if (user.isAdmin) { menu += `\n\n--- 👑 MENU ADMIN ---\nGunakan perintah seperti biasa (contoh: */listusers*).`; }
         message.reply(menu);
     }
     
     showProfile(message, user) {
-        const profileText = `=============================
---------------------- PROFIL --------------------
-=============================
+        const profileText = `==============================
+---------------------- PROFIL ---------------------
+==============================
 
 👤: ${message.from.split('@')[0]}
 💰: Rp.${user.balance}`;
@@ -157,18 +157,19 @@ class AltoBot {
     async startWithdrawProcess(message, user) {
         user.state = 'withdraw_amount'; user.withdrawData = {};
         await Storage.write(USERS_DB_PATH, this.users);
-        const withdrawText = `=============================
------------------- WITHDRAW ----------------
-=============================
+        const withdrawText = `==============================
+------------------- WITHDRAW -----------------
+==============================
 
 💰 Saldo Anda: Rp.${user.balance}
 
-*Ketik nominal penarikan (contoh: 10000)*
+*Ketik nominal penarikan (contoh: 100000)*
+*Minimal penarikan adalah Rp.100.000*
 
-=============================
+==============================
 *0* untuk kembali
 *00* untuk ke menu utama
-=============================`;
+==============================`;
         message.reply(withdrawText);
     }
     
@@ -177,6 +178,7 @@ class AltoBot {
             case 'withdraw_amount':
                 const amount = parseInt(input);
                 if (isNaN(amount) || amount <= 0) { message.reply("Nominal tidak valid. Harap masukkan angka saja."); return; }
+                if (amount < 100000) { message.reply("Minimal penarikan adalah Rp.100.000. Silakan masukkan nominal yang lebih besar."); return; }
                 if (amount > user.balance) { message.reply(`Saldo tidak cukup. Saldo Anda: Rp.${user.balance}`); return; }
                 user.withdrawData.amount = amount; user.state = 'withdraw_bank';
                 await Storage.write(USERS_DB_PATH, this.users);
@@ -209,33 +211,33 @@ class AltoBot {
         const captchaText = this.generateCaptcha();
         user.captchaState = { isWaiting: true, type: 'claim', answer: captchaText };
         await Storage.write(USERS_DB_PATH, this.users);
-        const claimText = `=============================
----------------- KLAIM BONUS --------------
-=============================
+        const claimText = `==============================
+----------------- KLAIM BONUS ---------------
+==============================
 
 Ketik kode captcha di bawah ini untuk klaim bonus harian:
 
 *Kode: ${captchaText}*
 
-=============================
+==============================
 *0* untuk kembali
 *00* untuk ke menu utama
-=============================`;
+==============================`;
         message.reply(claimText);
     }
 
     async handleListAvailableTasks(message, user) {
         const availableTasks = this.tasks.filter(task => !user.completedTasksToday.includes(task.id));
         if (availableTasks.length === 0) { this.replyWithMenuSuggestion(message, "Tidak ada tugas yang tersedia saat ini."); return; }
-        let taskList = `=============================
---------- 📝 DAFTAR TUGAS ---------
-=============================\n\n`;
+        let taskList = `==============================
+---------- 📝 DAFTAR TUGAS ----------
+==============================\n\n`;
         availableTasks.forEach(task => { taskList += `*${task.id}.* ${task.name}\n*Hadiah:* Rp.${task.reward} | *Durasi:* ${task.duration} menit\n\n`; });
-        taskList += `=============================
+        taskList += `==============================
 *Balas dengan nomor tugas untuk memulai*
 *0* untuk kembali
 *00* untuk ke menu utama
-=============================`;
+==============================`;
         user.state = 'memilih_tugas';
         await Storage.write(USERS_DB_PATH, this.users);
         message.reply(taskList);
@@ -269,38 +271,38 @@ Ketik kode captcha di bawah ini untuk klaim bonus harian:
         user.captchaState = { isWaiting: true, type: 'task', task: task, answer: captchaText };
         user.activeTask = null;
         await Storage.write(USERS_DB_PATH, this.users);
-        const taskCaptchaText = `=============================
--------- VERIFIKASI TUGAS --------
-=============================
+        const taskCaptchaText = `==============================
+--------- VERIFIKASI TUGAS ---------
+==============================
 
 Untuk menyelesaikan tugas *"${task.name}"*,
 Ketik kode captcha di bawah ini:
 
 *Kode: ${captchaText}*
 
-=============================
+==============================
 *0* untuk kembali
 *00* untuk ke menu utama
-=============================`;
+==============================`;
         message.reply(taskCaptchaText);
     }
 
     async showGameMenu(message, user) {
         user.state = 'memilih_game';
         await Storage.write(USERS_DB_PATH, this.users);
-        const gameMenuText = `=============================
---------- 🎮 PILIH GAME ---------
-=============================
+        const gameMenuText = `==============================
+---------- 🎮 PILIH GAME ----------
+==============================
 
 Pilih game yang ingin kamu mainkan:
 
 1. 🔢 Game Tebak Angka
-2. 🤔 Game Teka Teki Mudah
+2. 🤔 Game Teka Teki (AI)
 
-=============================
+==============================
 *Balas dengan nomor pilihan Anda*
 *0* untuk kembali
-=============================`;
+==============================`;
         message.reply(gameMenuText);
     }
     
@@ -316,40 +318,77 @@ Pilih game yang ingin kamu mainkan:
 
     async startGame(message, user) {
         user.inGame = true;
-        user.gameData = { type: 'tebak_angka', answer: Math.floor(Math.random() * 100) + 1 };
+        user.gameData = { 
+            type: 'tebak_angka', 
+            answer: Math.floor(Math.random() * 100) + 1,
+            attempts: 3
+        };
         await Storage.write(USERS_DB_PATH, this.users);
-        const gameText = `=============================
------- 🔢 GAME TEBAK ANGKA ------
-=============================
+        const gameText = `==============================
+------- 🔢 GAME TEBAK ANGKA -------
+==============================
 
-Saya telah memilih angka antara 1 dan 100. Coba tebak!
+Saya telah memilih angka antara 1 dan 100. Anda punya *3* kesempatan untuk menebak!
 
-=============================
+==============================
 *Ketik tebakan Anda (contoh: 50)*
 *0* untuk menyerah & kembali
-=============================`;
+==============================`;
         message.reply(gameText);
     }
 
     async startRiddleGame(message, user) {
-        if (this.riddles.length === 0) { this.replyWithMenuSuggestion(message, "Maaf, persediaan teka-teki sedang kosong."); return; }
-        const riddle = this.riddles[Math.floor(Math.random() * this.riddles.length)];
-        user.inGame = true;
-        user.gameData = { type: 'teka_teki', answer: riddle.answer };
-        await Storage.write(USERS_DB_PATH, this.users);
-        const riddleText = `=============================
------- 🤔 GAME TEKA TEKI ------
-=============================
+        message.reply("🤖 Sedang menyiapkan teka-teki baru dari AI, harap tunggu...");
+        try {
+            const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const prompt = `Buatkan satu teka-teki mudah untuk audiens Indonesia beserta jawabannya dalam format JSON yang ketat. Jawabannya harus satu kata. Contoh: {"question": "Jika dibutuhkan aku dibuang, jika tidak aku diambil. Siapakah aku?", "answer": "jangkar"}`;
+            let newRiddle = null;
+            let attempts = 0;
+            while (attempts < 5) {
+                const result = await model.generateContent(prompt);
+                const responseText = result.response.text();
+                try {
+                    const parsedRiddle = JSON.parse(responseText);
+                    if (!user.answeredRiddles.includes(parsedRiddle.question)) {
+                        newRiddle = parsedRiddle;
+                        break;
+                    }
+                } catch (e) {
+                    console.error("Gagal mem-parsing JSON dari AI:", responseText);
+                }
+                attempts++;
+            }
+            if (!newRiddle) {
+                this.replyWithMenuSuggestion(message, "Maaf, gagal membuat teka-teki unik saat ini. Coba lagi nanti.");
+                return;
+            }
+            user.inGame = true;
+            user.gameData = { 
+                type: 'teka_teki', 
+                answer: newRiddle.answer,
+                attempts: 3 
+            };
+            user.answeredRiddles.push(newRiddle.question);
+            await Storage.write(USERS_DB_PATH, this.users);
+            const riddleText = `==============================
+------- 🤔 GAME TEKA TEKI -------
+==============================
 
-Jawab teka-teki berikut:
+Jawab teka-teki berikut (Anda punya *3* kesempatan):
 
-*${riddle.question}*
+*${newRiddle.question}*
 
-=============================
+==============================
 *Ketik jawaban Anda*
 *0* untuk menyerah & kembali
-=============================`;
-        message.reply(riddleText);
+==============================`;
+            message.reply(riddleText);
+        } catch (error) {
+            console.error("Gagal membuat teka-teki:", error);
+            this.replyWithMenuSuggestion(message, "Maaf, terjadi kesalahan saat membuat teka-teki. Coba lagi nanti.");
+            user.state = 'main';
+            await Storage.write(USERS_DB_PATH, this.users);
+        }
     }
     
     async handleGameInput(message, user, input) {
@@ -362,30 +401,45 @@ Jawab teka-teki berikut:
         }
         const gameData = user.gameData;
         let isCorrect = false;
+        let wrongAnswerMessage = "";
         if (gameData.type === 'tebak_angka') {
             const guess = parseInt(input);
             if (isNaN(guess)) { message.reply("🤖 Masukkan angka yang valid!"); return; }
-            if (guess < gameData.answer) { message.reply("🤖 Terlalu rendah! Coba lagi."); return; }
-            if (guess > gameData.answer) { message.reply("🤖 Terlalu tinggi! Coba lagi."); return; }
-            isCorrect = true;
+            if (guess < gameData.answer) { wrongAnswerMessage = "🤖 Terlalu rendah! Coba lagi."; }
+            else if (guess > gameData.answer) { wrongAnswerMessage = "🤖 Terlalu tinggi! Coba lagi."; }
+            else { isCorrect = true; }
         } else if (gameData.type === 'teka_teki') {
             if (input.toLowerCase().trim() === gameData.answer.toLowerCase()) { isCorrect = true; } 
-            else { message.reply("Jawaban salah, coba lagi!"); return; }
+            else { wrongAnswerMessage = "Jawaban salah, coba lagi!"; }
+        }
+        if (!isCorrect) {
+            gameData.attempts -= 1;
+            if (gameData.attempts <= 0) {
+                message.reply(`${wrongAnswerMessage}\n\nKesempatan Anda habis! Jawabannya adalah *${gameData.answer}*. Game selesai.`);
+                user.inGame = false;
+                user.gameData = null;
+                await Storage.write(USERS_DB_PATH, this.users);
+                this.showMenu(message, user);
+            } else {
+                message.reply(`${wrongAnswerMessage}\nSisa kesempatan: *${gameData.attempts}*`);
+                await Storage.write(USERS_DB_PATH, this.users);
+            }
+            return;
         }
         if (isCorrect) {
-            const reward = gameData.type === 'tebak_angka' ? 250 : 300;
+            const reward = gameData.type === 'tebak_angka' ? 50 : 300;
             user.balance += reward; user.inGame = false; user.gameData = null;
             await Storage.write(USERS_DB_PATH, this.users);
-            const successText = `=============================
+            const successText = `==============================
 🎉 SELAMAT, ANDA BENAR! 🎉
-=============================
+==============================
 
 Jawabannya adalah *${gameData.answer}*.
 Anda mendapatkan *${reward}* saldo!
 
-=============================
+==============================
 Saldo baru Anda: Rp.${user.balance}
-=============================`;
+==============================`;
             message.reply(successText);
             this.showMenu(message, user);
         }
@@ -393,20 +447,20 @@ Saldo baru Anda: Rp.${user.balance}
 
     async showShopMenu(message, user) {
         if (this.shopItems.length === 0) { this.replyWithMenuSuggestion(message, "Daftar Olshop sedang kosong."); return; }
-        let shopText = `=============================
+        let shopText = `==============================
 OLSHOP PILIHAN
-=============================\n\n`;
+==============================\n\n`;
         this.shopItems.forEach(item => { shopText += `${item.id}. Belanja disini (${item.url})\n`; });
-        shopText += `\n=============================
+        shopText += `\n==============================
 0. Kembali
-=============================`;
+==============================`;
         message.reply(shopText);
     }
     
     showOwnerInfo(message, user) {
-        const ownerText = `=============================
---------- 📞 HUBUNGI OWNER ---------
-=============================
+        const ownerText = `==============================
+---------- 📞 HUBUNGI OWNER ----------
+==============================
 
 Anda dapat menghubungi owner/admin melalui WhatsApp di nomor berikut:
 
@@ -416,9 +470,9 @@ Anda dapat menghubungi owner/admin melalui WhatsApp di nomor berikut:
 
     async handleClearHistory(message, user) {
         this.userChats.delete(message.from);
-        const confirmationText = `=============================
------- 🤖 RIWAYAT DIHAPUS ------
-=============================
+        const confirmationText = `==============================
+------- 🤖 RIWAYAT DIHAPUS -------
+==============================
 
 Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
         await message.reply(confirmationText);
