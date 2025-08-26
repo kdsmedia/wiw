@@ -1,3 +1,5 @@
+
+
 [
   {
     "id": 1,
@@ -14,7 +16,7 @@
     "link": "https://www.youtube.com/watch?v=Ze_w7ac1u4w",
     "duration": 5,
     "reward": 150
-  }
+  },
   {
     "id": 3,
     "name": "Tonton Video",
@@ -23,6 +25,4 @@
     "duration": 50,
     "reward": 1000
   }
-  
 ]
-
