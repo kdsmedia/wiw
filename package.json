@@ -1,14 +1,14 @@
 {
   "name": "altobot-whatsapp",
   "version": "1.0.0",
-  "description": "Bot WhatsApp multifungsi dengan AI OpenAI.",
+  "description": "Bot WhatsApp multifungsi dengan AI Gemini.",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "openai": "^4.52.7",
+    "@google/generative-ai": "^0.14.1",
     "dotenv": "^16.4.5",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.23.0"
