@@ -1,7 +1,7 @@
 {
   "adminPassword": "admin123",
   "dailyBonus": {
-    "min": 100,
+    "min": 50,
     "max": 500
   }
 }
