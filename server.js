@@ -10,7 +10,6 @@ const USERS_DB_PATH = './users.json';
 const TASKS_DB_PATH = './tasks.json';
 const CONFIG_PATH = './config.json';
 const SHOP_DB_PATH = './shop.json';
-// riddles.json sudah tidak diperlukan lagi
 
 class Storage {
     static async read(filePath) { try { await fs.access(filePath); const data = await fs.readFile(filePath, 'utf-8'); return JSON.parse(data); } catch (error) { return null; } }
@@ -40,7 +39,6 @@ class AltoBot {
         this.users = await Storage.read(USERS_DB_PATH) || {};
         this.tasks = await Storage.read(TASKS_DB_PATH) || [];
         this.shopItems = await Storage.read(SHOP_DB_PATH) || [];
-        // riddles.json tidak dimuat lagi
         console.log("✅ Data berhasil dimuat.");
     }
 
@@ -337,39 +335,52 @@ Saya telah memilih angka antara 1 dan 100. Anda punya *3* kesempatan untuk meneb
         message.reply(gameText);
     }
 
+    // [FUNGSI DIPERBARUI TOTAL]
     async startRiddleGame(message, user) {
         message.reply("🤖 Sedang menyiapkan teka-teki baru dari AI, harap tunggu...");
         try {
             const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const prompt = `Buatkan satu teka-teki mudah untuk audiens Indonesia beserta jawabannya dalam format JSON yang ketat. Jawabannya harus satu kata. Contoh: {"question": "Jika dibutuhkan aku dibuang, jika tidak aku diambil. Siapakah aku?", "answer": "jangkar"}`;
+            const prompt = `Buatkan satu teka-teki mudah untuk audiens Indonesia beserta jawabannya dalam format JSON yang ketat dan hanya JSON. Jawabannya harus satu kata. Contoh: {"question": "Jika dibutuhkan aku dibuang, jika tidak aku diambil. Siapakah aku?", "answer": "jangkar"}`;
+            
             let newRiddle = null;
             let attempts = 0;
+
             while (attempts < 5) {
                 const result = await model.generateContent(prompt);
                 const responseText = result.response.text();
-                try {
-                    const parsedRiddle = JSON.parse(responseText);
-                    if (!user.answeredRiddles.includes(parsedRiddle.question)) {
-                        newRiddle = parsedRiddle;
-                        break;
+                
+                // [PERBAIKAN]: Ekstrak JSON dari respons AI
+                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try {
+                        const parsedRiddle = JSON.parse(jsonMatch[0]);
+                        if (!user.answeredRiddles.includes(parsedRiddle.question)) {
+                            newRiddle = parsedRiddle;
+                            break;
+                        }
+                    } catch (e) {
+                        console.error("Gagal mem-parsing JSON dari AI:", jsonMatch[0]);
                     }
-                } catch (e) {
-                    console.error("Gagal mem-parsing JSON dari AI:", responseText);
                 }
                 attempts++;
             }
+
             if (!newRiddle) {
                 this.replyWithMenuSuggestion(message, "Maaf, gagal membuat teka-teki unik saat ini. Coba lagi nanti.");
                 return;
             }
+
             user.inGame = true;
             user.gameData = { 
                 type: 'teka_teki', 
                 answer: newRiddle.answer,
                 attempts: 3 
             };
+            if (!user.answeredRiddles) user.answeredRiddles = [];
             user.answeredRiddles.push(newRiddle.question);
+            
             await Storage.write(USERS_DB_PATH, this.users);
+            
             const riddleText = `==============================
 ------- 🤔 GAME TEKA TEKI -------
 ==============================
@@ -383,6 +394,7 @@ Jawab teka-teki berikut (Anda punya *3* kesempatan):
 *0* untuk menyerah & kembali
 ==============================`;
             message.reply(riddleText);
+
         } catch (error) {
             console.error("Gagal membuat teka-teki:", error);
             this.replyWithMenuSuggestion(message, "Maaf, terjadi kesalahan saat membuat teka-teki. Coba lagi nanti.");
@@ -427,7 +439,7 @@ Jawab teka-teki berikut (Anda punya *3* kesempatan):
             return;
         }
         if (isCorrect) {
-            const reward = gameData.type === 'tebak_angka' ? 50 : 300;
+            const reward = gameData.type === 'tebak_angka' ? 250 : 300;
             user.balance += reward; user.inGame = false; user.gameData = null;
             await Storage.write(USERS_DB_PATH, this.users);
             const successText = `==============================
