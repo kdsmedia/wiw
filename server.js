@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import 'dotenv/config';
 import qrcode from 'qrcode-terminal';
 import pkg from 'whatsapp-web.js';
-const { Client, LocalAuth, MessageMedia } = pkg;
+const { Client, LocalAuth } = pkg;
 
 // --- File Paths ---
 const USERS_DB_PATH = './users.json';
@@ -109,14 +109,9 @@ class AltoBot {
                     default: message.reply("Pilihan tidak valid."); break;
                 }
             } else if (input.startsWith('/')) {
-                if (input.toLowerCase().startsWith('/selesai')) {
-                    const args = input.split(' ');
-                    await this.handleSelesai(message, user, args[1]);
-                } else {
-                    const args = input.split(' ').slice(1);
-                    const commandName = input.toLowerCase().split(' ')[0];
-                    this.handleAdminCommands(message, user, commandName, args);
-                }
+                const args = input.split(' ').slice(1);
+                const commandName = input.toLowerCase().split(' ')[0];
+                await this.handleAdminCommands(message, user, commandName, args);
             } else {
                 await this.getAiResponse(message);
             }
@@ -132,7 +127,7 @@ class AltoBot {
 2. 🏦 Withdraw
 3. 🎁 Klaim Bonus Harian
 4. 📝 Lihat & Kerjakan Tugas
-5. 🎮 Main Game Tebak Angka
+5. 🎮 Main Game
 6. 🛒 Shop (Olshop Pilihan)
 7. 📞 Hubungi Owner
 8. 🤖 Hapus Riwayat Obrolan
@@ -357,6 +352,13 @@ Jawab teka-teki berikut:
     }
     
     async handleGameInput(message, user, input) {
+        if (input === '0') {
+            user.inGame = false; user.gameData = null;
+            await Storage.write(USERS_DB_PATH, this.users);
+            message.reply("Anda telah keluar dari game.");
+            this.showMenu(message, user);
+            return;
+        }
         const gameData = user.gameData;
         let isCorrect = false;
         if (gameData.type === 'tebak_angka') {
@@ -433,7 +435,6 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
         const { type, task, answer, timerId } = user.captchaState;
         if (timerId) clearTimeout(timerId);
         user.captchaState = { isWaiting: false };
-
         if (userInput.trim().toUpperCase() === answer) {
             message.reply("✅ Verifikasi berhasil!");
             if (type === 'task') {
@@ -443,8 +444,7 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
             } else if (type === 'claim') {
                 const { min, max } = this.config.dailyBonus;
                 const reward = Math.floor(Math.random() * (max - min + 1)) + min;
-                user.balance += reward;
-                user.claimedDailyBonus = true;
+                user.balance += reward; user.claimedDailyBonus = true;
                 message.reply(`🎉 Selamat! Anda mendapatkan bonus harian ${reward} saldo. Saldo baru: ${user.balance}`);
             }
         } else {
@@ -467,19 +467,142 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
             message.reply(response.text().trim());
         } catch (error) {
             console.error("\n❌ Gemini API error:", error);
-            message.reply("🤖 Maaf, terjadi kesalahan saat menghubungi AI. Coba lagi nanti.");
+            message.reply("🤖 Maaf, ALTO sedikit sibuk. Coba lagi nanti.");
         }
     }
 
-    handleAdminCommands(message, user, commandName, args) {
+    // --- BAGIAN ADMIN DIMULAI DI SINI ---
+    checkAdmin(message, user) {
+        if (!user.isAdmin) {
+            message.reply("❌ Perintah ini hanya untuk admin.");
+            return false;
+        }
+        return true;
+    }
+
+    async handleAdminCommands(message, user, commandName, args) {
         if (!user.isAdmin && commandName !== '/loginadmin') {
-            this.getAiResponse(message); // Balas dengan AI jika bukan admin
+            if (commandName.startsWith('/')) { message.reply("Perintah tidak dikenali. Coba /menu."); }
+            else { await this.getAiResponse(message); }
             return;
         }
-        // ... Logika untuk semua perintah admin di sini ...
+
+        switch (commandName) {
+            case '/loginadmin': this.handleLoginAdmin(message, user, args[0]); break;
+            case '/listusers': if (this.checkAdmin(message, user)) this.handleListUsers(message, user); break;
+            case '/blockuser': if (this.checkAdmin(message, user)) await this.handleBlockUser(message, user, args[0]); break;
+            case '/unblockuser': if (this.checkAdmin(message, user)) await this.handleUnblockUser(message, user, args[0]); break;
+            case '/deleteuser': if (this.checkAdmin(message, user)) await this.handleDeleteUser(message, user, args[0]); break;
+            case '/addtugas': if (this.checkAdmin(message, user)) await this.handleAddTugas(message, user, args); break;
+            case '/listtugas': if (this.checkAdmin(message, user)) this.handleListAllTasks(message, user); break;
+            case '/hapustugas': if (this.checkAdmin(message, user)) await this.handleDeleteTask(message, user, args[0]); break;
+            case '/setbonus': if (this.checkAdmin(message, user)) await this.handleSetBonus(message, user, args[0], args[1]); break;
+            default: if (commandName.startsWith('/')) { message.reply("Perintah admin tidak dikenali."); } break;
+        }
+    }
+
+    handleLoginAdmin(message, user, password) {
+        if (password === this.config.adminPassword) {
+            user.isAdmin = true;
+            Storage.write(USERS_DB_PATH, this.users);
+            message.reply("👑 Anda berhasil masuk sebagai admin.");
+        } else {
+            message.reply("❌ Kata sandi admin salah.");
+        }
+    }
+
+    handleListUsers(message, user) {
+        let userList = "--- 👥 Daftar Pengguna ---\n";
+        for (const id in this.users) {
+            const u = this.users[id];
+            userList += `*ID:* ${id.split('@')[0]}\n*Saldo:* ${u.balance}\n*Diblokir:* ${u.isBlocked}\n\n`;
+        }
+        message.reply(userList);
+    }
+    
+    async handleBlockUser(message, user, userIdToBlock) {
+        if (!userIdToBlock) { message.reply("Penggunaan: /blockuser <nomor>"); return; }
+        const targetId = userIdToBlock.endsWith('@c.us') ? userIdToBlock : `${userIdToBlock}@c.us`;
+        if (this.users[targetId]) {
+            this.users[targetId].isBlocked = true;
+            await Storage.write(USERS_DB_PATH, this.users);
+            message.reply(`✅ Pengguna ${targetId.split('@')[0]} telah diblokir.`);
+        } else {
+            message.reply(`❌ Pengguna ${userIdToBlock} tidak ditemukan.`);
+        }
+    }
+    
+    async handleUnblockUser(message, user, userIdToUnblock) {
+        if (!userIdToUnblock) { message.reply("Penggunaan: /unblockuser <nomor>"); return; }
+        const targetId = userIdToUnblock.endsWith('@c.us') ? userIdToUnblock : `${userIdToUnblock}@c.us`;
+        if (this.users[targetId]) {
+            this.users[targetId].isBlocked = false;
+            await Storage.write(USERS_DB_PATH, this.users);
+            message.reply(`✅ Blokir untuk pengguna ${targetId.split('@')[0]} telah dibuka.`);
+        } else {
+            message.reply(`❌ Pengguna ${userIdToUnblock} tidak ditemukan.`);
+        }
+    }
+
+    async handleDeleteUser(message, user, userIdToDelete) {
+        if (!userIdToDelete) { message.reply("Penggunaan: /deleteuser <nomor>"); return; }
+        const targetId = userIdToDelete.endsWith('@c.us') ? userIdToDelete : `${userIdToDelete}@c.us`;
+        if (this.users[targetId]) {
+            delete this.users[targetId];
+            await Storage.write(USERS_DB_PATH, this.users);
+            message.reply(`✅ Pengguna ${targetId.split('@')[0]} telah dihapus.`);
+        } else {
+            message.reply(`❌ Pengguna ${userIdToDelete} tidak ditemukan.`);
+        }
+    }
+
+    async handleAddTugas(message, user, args) {
+        const [rewardStr, durationStr, name, link, ...descParts] = args;
+        const reward = parseInt(rewardStr);
+        const duration = parseInt(durationStr);
+        const description = descParts.join(' ');
+        if (isNaN(reward) || isNaN(duration) || !name || !link || !description || duration <= 0) {
+            message.reply("Penggunaan salah: /addtugas <hadiah> <durasi> <nama> <link> <deskripsi>");
+            return;
+        }
+        const newId = this.tasks.length > 0 ? Math.max(...this.tasks.map(t => t.id)) + 1 : 1;
+        this.tasks.push({ id: newId, reward, duration, name, link, description });
+        await Storage.write(TASKS_DB_PATH, this.tasks);
+        message.reply(`✅ Tugas baru ditambahkan dengan ID: ${newId}.`);
+    }
+
+    handleListAllTasks(message, user) {
+        if (this.tasks.length === 0) { message.reply("Belum ada tugas yang dibuat."); return; }
+        let taskList = "--- 📝 Semua Tugas ---\n";
+        this.tasks.forEach(task => { taskList += `*ID:* ${task.id} | *Bonus:* ${task.reward} | *Durasi:* ${task.duration} menit\n*Nama:* ${task.name}\n\n`; });
+        message.reply(taskList);
+    }
+    
+    async handleDeleteTask(message, user, taskIdStr) {
+        if (!taskIdStr) { message.reply("Penggunaan: /hapustugas <id>"); return; }
+        const taskId = parseInt(taskIdStr);
+        const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex > -1) {
+            this.tasks.splice(taskIndex, 1);
+            await Storage.write(TASKS_DB_PATH, this.tasks);
+            message.reply(`✅ Tugas dengan ID ${taskId} telah dihapus.`);
+        } else {
+            message.reply("❌ Tugas dengan ID tersebut tidak ditemukan.");
+        }
+    }
+    
+    async handleSetBonus(message, user, minStr, maxStr) {
+        const min = parseInt(minStr);
+        const max = parseInt(maxStr);
+        if (isNaN(min) || isNaN(max) || min > max) {
+            message.reply("Penggunaan salah. Contoh: /setbonus 100 500");
+            return;
+        }
+        this.config.dailyBonus = { min, max };
+        await Storage.write(CONFIG_PATH, this.config);
+        message.reply(`✅ Bonus klaim harian telah diatur ke rentang ${min} - ${max}.`);
     }
 }
 
 const bot = new AltoBot();
 bot.initialize();
-
