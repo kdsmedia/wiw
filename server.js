@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as fs from 'node:fs/promises';
 import 'dotenv/config';
 import qrcode from 'qrcode-terminal';
@@ -24,8 +24,7 @@ class AltoBot {
             puppeteer: { headless: true, args: ['--no-sandbox'] },
             webVersionCache: { type: 'remote', remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html' }
         });
-        this.openai = null;
-        this.userChats = new Map(); this.users = {}; this.tasks = []; this.shopItems = []; this.riddles = []; this.config = {}; this.ownerNumber = "6285813899649";
+        this.genAI = null; this.userChats = new Map(); this.users = {}; this.tasks = []; this.shopItems = []; this.riddles = []; this.config = {}; this.ownerNumber = "6285813899649";
     }
 
     async initialize() {
@@ -46,14 +45,8 @@ class AltoBot {
     }
 
     initializeAI() {
-        if (!process.env.OPENAI_API_KEY) { console.error("\n❌ ERROR: Environment variable OPENAI_API_KEY tidak diatur."); process.exit(1); }
-        try {
-            this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-            console.log("✅ OpenAI AI Berhasil Diinisialisasi.");
-        } catch (error) {
-            console.error("❌ Gagal menginisialisasi OpenAI AI:", error);
-            process.exit(1);
-        }
+        if (!process.env.API_KEY) { console.error("\n❌ ERROR: Environment variable API_KEY tidak diatur."); process.exit(1); }
+        try { this.genAI = new GoogleGenerativeAI(process.env.API_KEY); console.log("✅ Google Gemini AI Berhasil Diinisialisasi."); } catch (error) { console.error("❌ Gagal menginisialisasi Google Gemini AI:", error); process.exit(1); }
     }
     
     setupWhatsAppEvents() {
@@ -465,23 +458,18 @@ Riwayat obrolan Anda dengan AI telah berhasil dihapus.`;
         try {
             const userId = message.from;
             if (!this.userChats.has(userId)) {
-                this.userChats.set(userId, [
-                    { role: "system", content: "Kamu adalah ALTO, bot WhatsApp yang ramah dan membantu. Selalu balas dalam Bahasa Indonesia. Jangan gunakan format markdown." }
-                ]);
+                 const model = this.genAI.getGenerativeModel({ 
+                    model: "gemini-1.5-flash",
+                    systemInstruction: "Kamu adalah ALTO, bot WhatsApp yang ramah dan membantu. Selalu balas dalam Bahasa Indonesia. Jangan gunakan format markdown."
+                });
+                this.userChats.set(userId, model.startChat());
             }
-            const history = this.userChats.get(userId);
-            history.push({ role: "user", content: message.body });
-
-            const chatCompletion = await this.openai.chat.completions.create({
-                messages: history,
-                model: "gpt-4o-mini",
-            });
-            const botResponse = chatCompletion.choices[0].message.content;
-            history.push({ role: "assistant", content: botResponse });
-            this.userChats.set(userId, history);
-            message.reply(botResponse.trim());
+            const chat = this.userChats.get(userId);
+            const result = await chat.sendMessage(message.body);
+            const response = await result.response;
+            message.reply(response.text().trim());
         } catch (error) {
-            console.error("\n❌ OpenAI API error:", error);
+            console.error("\n❌ Gemini API error:", error);
             message.reply("🤖 Maaf, ALTO sedikit sibuk. Coba lagi nanti.");
         }
     }
