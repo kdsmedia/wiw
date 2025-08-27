@@ -321,14 +321,14 @@ ketik *0* untuk kembali
         user.gameData = { 
             type: 'tebak_angka', 
             answer: Math.floor(Math.random() * 100) + 1,
-            attempts: 5
+            attempts: 10
         };
         await Storage.write(USERS_DB_PATH, this.users);
         const gameText = `==============================
 ------- 🔢 GAME TEBAK ANGKA -------
 ==============================
 
-Saya telah memilih angka antara 1 dan 100. Anda punya *5* kesempatan untuk menebak!
+Saya telah memilih angka antara 1 dan 100. Anda punya *10* kesempatan untuk menebak!
 
 ==============================
 *Ketik tebakan Anda (contoh: 50)*
@@ -352,14 +352,14 @@ ketik *0* untuk menyerah & kembali
             type: 'teka_teki',
             question: riddle.question,
             answer: riddle.answer,
-            attempts: 3 
+            attempts: 10 
         };
         await Storage.write(USERS_DB_PATH, this.users);
         const riddleText = `==============================
 ------- 🤔 GAME TEKA TEKI -------
 ==============================
 
-Jawab teka-teki berikut (Anda punya *5* kesempatan):
+Jawab teka-teki berikut (Anda punya *10* kesempatan):
 
 *${riddle.question}*
 
