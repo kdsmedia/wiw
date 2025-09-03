@@ -66,7 +66,7 @@ class AltoBot {
         const input = message.body.trim();
 
         if (!user) {
-            user = { balance: 0, isBlocked: false, lastLogin: new Date().toDateString(), claimedDailyBonus: false, completedTasksToday: [], isAdmin: false, captchaState: { isWaiting: false }, inGame: false, gameData: null, state: 'main', miningPower: 1, energy: 100, withdrawData: {}, activeTask: null, answeredRiddles: [] };
+            user = { balance: 0, isBlocked: false, lastLogin: new Date().toDateString(), claimedDailyBonus: false, completedTasksToday: [], isAdmin: false, captchaState: { isWaiting: false }, inGame: false, gameData: null, state: 'main', miningPower: 1, energy: 100, withdrawData: {}, activeTask: null, answeredRiddles: [], chatHistory: [] };
             this.users[userId] = user;
             await Storage.write(USERS_DB_PATH, this.users);
             message.reply(`👋 Halo! Selamat datang di ALTO Bot. Akun baru telah dibuat untukmu.`);
@@ -85,7 +85,7 @@ class AltoBot {
             this.showMenu(message, user);
             return;
         }
-         if (input.toLowerCase() === '0' || input.toLowerCase() === '/batal') {
+        if (input.toLowerCase() === '0' || input.toLowerCase() === '/batal') {
             user.state = 'main'; user.inGame = false; user.captchaState = { isWaiting: false }; user.activeTask = null;
             await Storage.write(USERS_DB_PATH, this.users);
             message.reply("Aksi dibatalkan.");
@@ -118,7 +118,7 @@ class AltoBot {
                 const commandName = input.toLowerCase().split(' ')[0];
                 await this.handleAdminCommands(message, user, commandName, args);
             } else {
-                await this.getAiResponse(message);
+                await this.getAiResponse(message, user);
             }
         }
     }
@@ -459,7 +459,9 @@ Anda dapat menghubungi owner/admin melalui WhatsApp di nomor berikut:
     }
 
     async handleClearHistory(message, user) {
+        user.chatHistory = [];
         this.userChats.delete(message.from);
+        await Storage.write(USERS_DB_PATH, this.users);
         const confirmationText = `==============================
 ------- 🤖 RIWAYAT DIHAPUS -------
 ==============================
@@ -494,20 +496,43 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
         this.showMenu(message, user);
     }
 
-    async getAiResponse(message) {
+    async getAiResponse(message, user) {
         try {
             const userId = message.from;
+            const model = this.genAI.getGenerativeModel({
+                model: "gemini-1.5-flash",
+                systemInstruction: "Kamu adalah ALTO, bot WhatsApp yang ramah dan membantu. Selalu balas dalam Bahasa Indonesia. Jangan gunakan format markdown."
+            });
+
+            // Periksa apakah sesi obrolan sudah ada di memory
             if (!this.userChats.has(userId)) {
-                 const model = this.genAI.getGenerativeModel({ 
-                    model: "gemini-1.5-flash",
-                    systemInstruction: "Kamu adalah ALTO, bot WhatsApp yang ramah dan membantu. Selalu balas dalam Bahasa Indonesia. Jangan gunakan format markdown."
-                });
-                this.userChats.set(userId, model.startChat());
+                // Jika tidak ada, buat sesi baru dengan riwayat obrolan dari file
+                const chat = model.startChat({ history: user.chatHistory });
+                this.userChats.set(userId, chat);
             }
             const chat = this.userChats.get(userId);
+
             const result = await chat.sendMessage(message.body);
             const response = await result.response;
-            this.replyWithMenuSuggestion(message, response.text().trim());
+            const botResponseText = response.text().trim();
+
+            // Tambahkan pesan pengguna dan respons bot ke riwayat
+            user.chatHistory.push({
+                role: 'user',
+                parts: [{ text: message.body }]
+            });
+            user.chatHistory.push({
+                role: 'model',
+                parts: [{ text: botResponseText }]
+            });
+
+            // Batasi riwayat obrolan (misal: 10 pesan terakhir) untuk menghemat memori
+            if (user.chatHistory.length > 10) {
+                user.chatHistory = user.chatHistory.slice(-10);
+            }
+            await Storage.write(USERS_DB_PATH, this.users);
+
+            this.replyWithMenuSuggestion(message, botResponseText);
         } catch (error) {
             console.error("\n❌ Gemini API error:", error);
             this.replyWithMenuSuggestion(message, "🤖 Maaf, ALTO sedikit sibuk. Coba lagi nanti.");
@@ -525,7 +550,7 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
     async handleAdminCommands(message, user, commandName, args) {
         if (!user.isAdmin && commandName !== '/loginadmin') {
             if (commandName.startsWith('/')) { message.reply("Perintah tidak dikenali. Coba ketik *00*."); }
-            else { await this.getAiResponse(message); }
+            else { await this.getAiResponse(message, user); }
             return;
         }
 
@@ -631,7 +656,7 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
         } else {
             message.reply("❌ Tugas dengan ID tersebut tidak ditemukan.");
         }
-    } 
+    }
     
     async handleSetBonus(message, user, minStr, maxStr) {
         const min = parseInt(minStr);
