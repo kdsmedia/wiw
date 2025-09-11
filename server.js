@@ -13,8 +13,18 @@ const SHOP_DB_PATH = './shop.json';
 const RIDDLES_DB_PATH = './riddles.json';
 
 class Storage {
-    static async read(filePath) { try { await fs.access(filePath); const data = await fs.readFile(filePath, 'utf-8'); return JSON.parse(data); } catch (error) { return null; } }
-    static async write(filePath, data) { await fs.writeFile(filePath, JSON.stringify(data, null, 2)); }
+    static async read(filePath) { 
+        try { 
+            await fs.access(filePath); 
+            const data = await fs.readFile(filePath, 'utf-8'); 
+            return JSON.parse(data); 
+        } catch (error) { 
+            return null; 
+        } 
+    }
+    static async write(filePath, data) { 
+        await fs.writeFile(filePath, JSON.stringify(data, null, 2)); 
+    }
 }
 
 class AltoBot {
@@ -24,7 +34,16 @@ class AltoBot {
             puppeteer: { headless: true, args: ['--no-sandbox'] },
             webVersionCache: { type: 'remote', remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html' }
         });
-        this.genAI = null; this.userChats = new Map(); this.users = {}; this.tasks = []; this.shopItems = []; this.riddles = []; this.config = {}; this.ownerNumber = "6285813899649";
+        this.genAI = null; 
+        this.userChats = new Map(); 
+        this.users = {}; 
+        this.tasks = []; 
+        this.shopItems = []; 
+        this.riddles = []; 
+        this.config = {}; 
+        this.ownerNumber = "6285813899649";
+        this.rateLimits = new Map();
+        this.RATE_LIMIT_COOLDOWN = 3000;
     }
 
     async initialize() {
@@ -36,7 +55,7 @@ class AltoBot {
     }
 
     async loadData() {
-        this.config = await Storage.read(CONFIG_PATH) || { adminPassword: 'admin123', dailyBonus: { min: 50, max: 500 } };
+        this.config = await Storage.read(CONFIG_PATH) || { adminPassword: 'admin123', dailyBonus: { min: 1, max: 50 } };
         this.users = await Storage.read(USERS_DB_PATH) || {};
         this.tasks = await Storage.read(TASKS_DB_PATH) || [];
         this.shopItems = await Storage.read(SHOP_DB_PATH) || [];
@@ -45,13 +64,26 @@ class AltoBot {
     }
 
     initializeAI() {
-        if (!process.env.API_KEY) { console.error("\n❌ ERROR: Environment variable API_KEY tidak diatur."); process.exit(1); }
-        try { this.genAI = new GoogleGenerativeAI(process.env.API_KEY); console.log("✅ Google Gemini AI Berhasil Diinisialisasi."); } catch (error) { console.error("❌ Gagal menginisialisasi Google Gemini AI:", error); process.exit(1); }
+        if (!process.env.API_KEY) { 
+            console.error("\n❌ ERROR: Environment variable API_KEY tidak diatur."); 
+            process.exit(1); 
+        }
+        try { 
+            this.genAI = new GoogleGenerativeAI(process.env.API_KEY); 
+            console.log("✅ Google Gemini AI Berhasil Diinisialisasi."); 
+        } catch (error) { 
+            console.error("❌ Gagal menginisialisasi Google Gemini AI:", error); 
+            process.exit(1); 
+        }
     }
     
     setupWhatsAppEvents() {
-        this.client.on('qr', qr => { qrcode.generate(qr, { small: true }); });
-        this.client.on('ready', () => { console.log('✅ ALTO Bot terhubung dan siap menerima pesan!'); });
+        this.client.on('qr', qr => { 
+            qrcode.generate(qr, { small: true }); 
+        });
+        this.client.on('ready', () => { 
+            console.log('✅ ALTO Bot terhubung dan siap menerima pesan!'); 
+        });
         this.client.on('message', this.handleMessage.bind(this));
     }
 
@@ -66,7 +98,24 @@ class AltoBot {
         const input = message.body.trim();
 
         if (!user) {
-            user = { balance: 0, isBlocked: false, lastLogin: new Date().toDateString(), claimedDailyBonus: false, completedTasksToday: [], isAdmin: false, captchaState: { isWaiting: false }, inGame: false, gameData: null, state: 'main', miningPower: 1, energy: 100, withdrawData: {}, activeTask: null, answeredRiddles: [], chatHistory: [] };
+            user = { 
+                balance: 0, 
+                isBlocked: false, 
+                lastLogin: new Date().toDateString(), 
+                claimedDailyBonus: false, 
+                completedTasksToday: [], 
+                isAdmin: false, 
+                captchaState: { isWaiting: false }, 
+                inGame: false, 
+                gameData: null, 
+                state: 'main', 
+                miningPower: 1, 
+                energy: 100, 
+                withdrawData: {}, 
+                activeTask: null, 
+                answeredRiddles: [], 
+                chatHistory: [] 
+            };
             this.users[userId] = user;
             await Storage.write(USERS_DB_PATH, this.users);
             message.reply(`👋 Halo! Selamat datang di ALTO Bot. Akun baru telah dibuat untukmu.`);
@@ -77,27 +126,52 @@ class AltoBot {
         if (user.isBlocked) return;
 
         const today = new Date().toDateString();
-        if (user.lastLogin !== today) { user.lastLogin = today; user.claimedDailyBonus = false; user.completedTasksToday = []; }
+        if (user.lastLogin !== today) { 
+            user.lastLogin = today; 
+            user.claimedDailyBonus = false; 
+            user.completedTasksToday = []; 
+        }
 
         if (input.toLowerCase() === '00' || input.toLowerCase() === '/menu') {
-            user.state = 'main'; user.inGame = false; user.captchaState = { isWaiting: false }; user.activeTask = null;
+            user.state = 'main'; 
+            user.inGame = false; 
+            user.captchaState = { isWaiting: false }; 
+            user.activeTask = null;
             await Storage.write(USERS_DB_PATH, this.users);
             this.showMenu(message, user);
             return;
         }
         if (input.toLowerCase() === '0' || input.toLowerCase() === '/batal') {
-            user.state = 'main'; user.inGame = false; user.captchaState = { isWaiting: false }; user.activeTask = null;
+            user.state = 'main'; 
+            user.inGame = false; 
+            user.captchaState = { isWaiting: false }; 
+            user.activeTask = null;
             await Storage.write(USERS_DB_PATH, this.users);
             message.reply("Aksi dibatalkan.");
             this.showMenu(message, user);
             return;
         }
         
-        if (user.captchaState.isWaiting) { await this.verifyCaptcha(message, user, input); return; }
-        if (user.inGame) { await this.handleGameInput(message, user, input); return; }
-        if (user.state.startsWith('withdraw_')) { await this.handleWithdrawInput(message, user, input); return; }
-        if (user.state === 'memilih_tugas') { await this.handleTaskSelection(message, user, input); return; }
-        if (user.state === 'memilih_game') { await this.handleGameSelection(message, user, input); return; }
+        if (user.captchaState.isWaiting) { 
+            await this.verifyCaptcha(message, user, input); 
+            return; 
+        }
+        if (user.inGame) { 
+            await this.handleGameInput(message, user, input); 
+            return; 
+        }
+        if (user.state.startsWith('withdraw_')) { 
+            await this.handleWithdrawInput(message, user, input); 
+            return; 
+        }
+        if (user.state === 'memilih_tugas') { 
+            await this.handleTaskSelection(message, user, input); 
+            return; 
+        }
+        if (user.state === 'memilih_game') { 
+            await this.handleGameSelection(message, user, input); 
+            return; 
+        }
 
         if (user.state === 'main') {
             const choice = parseInt(input);
@@ -118,9 +192,23 @@ class AltoBot {
                 const commandName = input.toLowerCase().split(' ')[0];
                 await this.handleAdminCommands(message, user, commandName, args);
             } else {
-                await this.getAiResponse(message, user);
+                if (this.checkRateLimit(userId)) {
+                    await this.getAiResponse(message, user);
+                } else {
+                    message.reply("Mohon tunggu sebentar sebelum mengirim pesan lagi ke AI.");
+                }
             }
         }
+    }
+
+    checkRateLimit(userId) {
+        const lastMessageTime = this.rateLimits.get(userId) || 0;
+        const now = Date.now();
+        if (now - lastMessageTime > this.RATE_LIMIT_COOLDOWN) {
+            this.rateLimits.set(userId, now);
+            return true;
+        }
+        return false;
     }
 
     showMenu(message, user) {
@@ -140,7 +228,9 @@ class AltoBot {
 ==============================
 *Ketik nomor pilihan Anda (contoh: 1)*
 ==============================`;
-        if (user.isAdmin) { menu += `\n\n--- 👑 MENU ADMIN ---\nGunakan perintah seperti biasa (contoh: */listusers*).`; }
+        if (user.isAdmin) { 
+            menu += `\n\n--- 👑 MENU ADMIN ---\nGunakan perintah seperti biasa (contoh: */listusers*).`; 
+        }
         message.reply(menu);
     }
     
@@ -155,7 +245,8 @@ class AltoBot {
     }
 
     async startWithdrawProcess(message, user) {
-        user.state = 'withdraw_amount'; user.withdrawData = {};
+        user.state = 'withdraw_amount'; 
+        user.withdrawData = {};
         await Storage.write(USERS_DB_PATH, this.users);
         const withdrawText = `==============================
 ------------------- WITHDRAW -----------------
@@ -177,25 +268,38 @@ ketik *00* untuk ke menu utama
         switch(user.state) {
             case 'withdraw_amount':
                 const amount = parseInt(input);
-                if (isNaN(amount) || amount <= 0) { message.reply("Nominal tidak valid. Harap masukkan angka saja."); return; }
-                if (amount < 100000) { message.reply("Minimal penarikan adalah Rp.100.000. Silakan masukkan nominal yang lebih besar."); return; }
-                if (amount > user.balance) { message.reply(`Saldo tidak cukup. Saldo Anda: Rp.${user.balance}`); return; }
-                user.withdrawData.amount = amount; user.state = 'withdraw_bank';
+                if (isNaN(amount) || amount <= 0) { 
+                    message.reply("Nominal tidak valid. Harap masukkan angka saja."); 
+                    return; 
+                }
+                if (amount < 100000) { 
+                    message.reply("Minimal penarikan adalah Rp.100.000. Silakan masukkan nominal yang lebih besar."); 
+                    return; 
+                }
+                if (amount > user.balance) { 
+                    message.reply(`Saldo tidak cukup. Saldo Anda: Rp.${user.balance}`); 
+                    return; 
+                }
+                user.withdrawData.amount = amount; 
+                user.state = 'withdraw_bank';
                 await Storage.write(USERS_DB_PATH, this.users);
                 message.reply(`Nominal: Rp.${amount}\n\n*Ketik nama bank (contoh: bca/bri/dana/ovo/gopay)*`);
                 break;
             case 'withdraw_bank':
-                user.withdrawData.bank = input; user.state = 'withdraw_name';
+                user.withdrawData.bank = input; 
+                user.state = 'withdraw_name';
                 await Storage.write(USERS_DB_PATH, this.users);
                 message.reply(`Bank: ${input}\n\n*Ketik nama pemilik rekening*`);
                 break;
             case 'withdraw_name':
-                user.withdrawData.name = input; user.state = 'withdraw_number';
+                user.withdrawData.name = input; 
+                user.state = 'withdraw_number';
                 await Storage.write(USERS_DB_PATH, this.users);
                 message.reply(`Nama: ${input}\n\n*Ketik nomor rekening/telepon*`);
                 break;
             case 'withdraw_number':
-                user.withdrawData.number = input; user.state = 'main';
+                user.withdrawData.number = input; 
+                user.state = 'main';
                 user.balance -= user.withdrawData.amount;
                 await Storage.write(USERS_DB_PATH, this.users);
                 const notification = `--- 🏦 PERMINTAAN WITHDRAW ---\nUser: ${message.from.split('@')[0]}\nJumlah: Rp.${user.withdrawData.amount}\nBank: ${user.withdrawData.bank}\nNama: ${user.withdrawData.name}\nNo. Rek: ${user.withdrawData.number}\n\nHarap segera diproses.`;
@@ -207,7 +311,10 @@ ketik *00* untuk ke menu utama
     }
 
     async handleClaim(message, user) {
-        if (user.claimedDailyBonus) { this.replyWithMenuSuggestion(message, "Anda sudah mengklaim bonus harian hari ini. Coba lagi besok."); return; }
+        if (user.claimedDailyBonus) { 
+            this.replyWithMenuSuggestion(message, "Anda sudah mengklaim bonus harian hari ini. Coba lagi besok."); 
+            return; 
+        }
         const captchaText = this.generateCaptcha();
         user.captchaState = { isWaiting: true, type: 'claim', answer: captchaText };
         await Storage.write(USERS_DB_PATH, this.users);
@@ -228,11 +335,16 @@ ketik *00* untuk ke menu utama
 
     async handleListAvailableTasks(message, user) {
         const availableTasks = this.tasks.filter(task => !user.completedTasksToday.includes(task.id));
-        if (availableTasks.length === 0) { this.replyWithMenuSuggestion(message, "Tidak ada tugas yang tersedia saat ini."); return; }
+        if (availableTasks.length === 0) { 
+            this.replyWithMenuSuggestion(message, "Tidak ada tugas yang tersedia saat ini."); 
+            return; 
+        }
         let taskList = `==============================
 ---------- 📝 DAFTAR TUGAS ----------
 ==============================\n\n`;
-        availableTasks.forEach(task => { taskList += `*${task.id}.* ${task.name}\n*Hadiah:* Rp.${task.reward} | *Durasi:* ${task.duration} menit\n\n`; });
+        availableTasks.forEach(task => { 
+            taskList += `*${task.id}.* ${task.name}\n*Hadiah:* Rp.${task.reward} | *Durasi:* ${task.duration} menit\n\n`; 
+        });
         taskList += `==============================
 *Balas dengan nomor tugas untuk memulai*
 ketik *0* untuk kembali
@@ -247,8 +359,16 @@ ketik *00* untuk ke menu utama
         const taskId = parseInt(input);
         const task = this.tasks.find(t => t.id === taskId);
         user.state = 'main';
-        if (!task) { this.replyWithMenuSuggestion(message, "Pilihan tidak valid."); await Storage.write(USERS_DB_PATH, this.users); return; }
-        if (user.activeTask) { this.replyWithMenuSuggestion(message, `Anda masih memiliki tugas aktif: "${this.tasks.find(t => t.id === user.activeTask.id)?.name}". Selesaikan dulu dengan mengetik */selesai ${user.activeTask.id}*`); await Storage.write(USERS_DB_PATH, this.users); return; }
+        if (!task) { 
+            this.replyWithMenuSuggestion(message, "Pilihan tidak valid."); 
+            await Storage.write(USERS_DB_PATH, this.users); 
+            return; 
+        }
+        if (user.activeTask) { 
+            this.replyWithMenuSuggestion(message, `Anda masih memiliki tugas aktif: "${this.tasks.find(t => t.id === user.activeTask.id)?.name}". Selesaikan dulu dengan mengetik */selesai ${user.activeTask.id}*`); 
+            await Storage.write(USERS_DB_PATH, this.users); 
+            return; 
+        }
         user.activeTask = { id: taskId, startTime: Date.now() };
         await Storage.write(USERS_DB_PATH, this.users);
         const taskInstruction = `Tugas dimulai: *${task.name}*\n\n${task.description}\n\n*Link Tugas:* ${task.link}\n\nAnda harus menunggu *${task.duration} menit*. Setelah itu, ketik */selesai ${task.id}* untuk verifikasi dan klaim hadiah Anda.`;
@@ -257,8 +377,14 @@ ketik *00* untuk ke menu utama
 
     async handleSelesai(message, user, taskIdStr) {
         const taskId = parseInt(taskIdStr);
-        if (isNaN(taskId)) { this.replyWithMenuSuggestion(message, "Gunakan format */selesai [id_tugas]*. Contoh: */selesai 1*"); return; }
-        if (!user.activeTask || user.activeTask.id !== taskId) { this.replyWithMenuSuggestion(message, "Anda tidak sedang mengerjakan tugas ini atau tugas sudah selesai."); return; }
+        if (isNaN(taskId)) { 
+            this.replyWithMenuSuggestion(message, "Gunakan format */selesai [id_tugas]*. Contoh: */selesai 1*"); 
+            return; 
+        }
+        if (!user.activeTask || user.activeTask.id !== taskId) { 
+            this.replyWithMenuSuggestion(message, "Anda tidak sedang mengerjakan tugas ini atau tugas sudah selesai."); 
+            return; 
+        }
         const task = this.tasks.find(t => t.id === taskId);
         const timeElapsed = Date.now() - user.activeTask.startTime;
         const requiredTime = task.duration * 60 * 1000;
@@ -320,7 +446,7 @@ ketik *0* untuk kembali
         user.inGame = true;
         user.gameData = { 
             type: 'tebak_angka', 
-            answer: Math.floor(Math.random() * 100) + 1,
+            answer: Math.floor(Math.random() * 500) + 1,
             attempts: 10
         };
         await Storage.write(USERS_DB_PATH, this.users);
@@ -328,7 +454,7 @@ ketik *0* untuk kembali
 ------- 🔢 GAME TEBAK ANGKA -------
 ==============================
 
-Saya telah memilih angka antara 1 dan 100. Anda punya *10* kesempatan untuk menebak!
+Saya telah memilih angka antara 1 dan 500. Anda punya *10* kesempatan untuk menebak!
 
 ==============================
 *Ketik tebakan Anda (contoh: 50)*
@@ -352,7 +478,7 @@ ketik *0* untuk menyerah & kembali
             type: 'teka_teki',
             question: riddle.question,
             answer: riddle.answer,
-            attempts: 10 
+            attempts: 10
         };
         await Storage.write(USERS_DB_PATH, this.users);
         const riddleText = `==============================
@@ -372,7 +498,8 @@ ketik *0* untuk menyerah & kembali
     
     async handleGameInput(message, user, input) {
         if (input === '0') {
-            user.inGame = false; user.gameData = null;
+            user.inGame = false; 
+            user.gameData = null;
             await Storage.write(USERS_DB_PATH, this.users);
             message.reply("Anda telah keluar dari game.");
             this.showMenu(message, user);
@@ -385,10 +512,19 @@ ketik *0* untuk menyerah & kembali
 
         if (gameData.type === 'tebak_angka') {
             const guess = parseInt(input);
-            if (isNaN(guess)) { message.reply("🤖 Masukkan angka yang valid!"); return; }
-            if (guess < gameData.answer) { wrongAnswerMessage = "🤖 Terlalu rendah! Coba lagi."; }
-            else if (guess > gameData.answer) { wrongAnswerMessage = "🤖 Terlalu tinggi! Coba lagi."; }
-            else { isCorrect = true; }
+            if (isNaN(guess)) { 
+                message.reply("🤖 Masukkan angka yang valid!"); 
+                return; 
+            }
+            if (guess < gameData.answer) { 
+                wrongAnswerMessage = "🤖 Terlalu rendah! Coba lagi."; 
+            }
+            else if (guess > gameData.answer) { 
+                wrongAnswerMessage = "🤖 Terlalu tinggi! Coba lagi."; 
+            }
+            else { 
+                isCorrect = true; 
+            }
         } else if (gameData.type === 'teka_teki') {
             if (input.toLowerCase().trim() === gameData.answer.toLowerCase()) {
                 isCorrect = true;
@@ -414,7 +550,8 @@ ketik *0* untuk menyerah & kembali
 
         if (isCorrect) {
             const reward = gameData.type === 'tebak_angka' ? 50 : 300;
-            user.balance += reward; user.inGame = false;
+            user.balance += reward; 
+            user.inGame = false;
             if (gameData.type === 'teka_teki') {
                 user.answeredRiddles.push(gameData.question);
             }
@@ -436,11 +573,16 @@ Saldo baru Anda: Rp.${user.balance}
     }
 
     async showShopMenu(message, user) {
-        if (this.shopItems.length === 0) { this.replyWithMenuSuggestion(message, "Daftar Olshop sedang kosong."); return; }
+        if (this.shopItems.length === 0) { 
+            this.replyWithMenuSuggestion(message, "Daftar Olshop sedang kosong."); 
+            return; 
+        }
         let shopText = `==============================
 OLSHOP PILIHAN
 ==============================\n\n`;
-        this.shopItems.forEach(item => { shopText += `${item.id}. Belanja disini (${item.url})\n`; });
+        this.shopItems.forEach(item => { 
+            shopText += `${item.id}. Belanja disini (${item.url})\n`; 
+        });
         shopText += `\n==============================
 ketik *0* untuk Kembali
 ==============================`;
@@ -471,7 +613,9 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
         this.showMenu(message, user);
     }
 
-    generateCaptcha(length = 6) { return Math.random().toString(36).substring(2, 2 + length).toUpperCase(); }
+    generateCaptcha(length = 6) { 
+        return Math.random().toString(36).substring(2, 2 + length).toUpperCase(); 
+    }
 
     async verifyCaptcha(message, user, userInput) {
         const { type, task, answer, timerId } = user.captchaState;
@@ -486,7 +630,8 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
             } else if (type === 'claim') {
                 const { min, max } = this.config.dailyBonus;
                 const reward = Math.floor(Math.random() * (max - min + 1)) + min;
-                user.balance += reward; user.claimedDailyBonus = true;
+                user.balance += reward; 
+                user.claimedDailyBonus = true;
                 message.reply(`🎉 Selamat! Anda mendapatkan bonus harian ${reward} saldo. Saldo baru: ${user.balance}`);
             }
         } else {
@@ -504,9 +649,7 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
                 systemInstruction: "Kamu adalah ALTO, bot WhatsApp yang ramah dan membantu. Selalu balas dalam Bahasa Indonesia. Jangan gunakan format markdown."
             });
 
-            // Periksa apakah sesi obrolan sudah ada di memory
             if (!this.userChats.has(userId)) {
-                // Jika tidak ada, buat sesi baru dengan riwayat obrolan dari file
                 const chat = model.startChat({ history: user.chatHistory });
                 this.userChats.set(userId, chat);
             }
@@ -516,7 +659,6 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
             const response = await result.response;
             const botResponseText = response.text().trim();
 
-            // Tambahkan pesan pengguna dan respons bot ke riwayat
             user.chatHistory.push({
                 role: 'user',
                 parts: [{ text: message.body }]
@@ -526,7 +668,6 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
                 parts: [{ text: botResponseText }]
             });
 
-            // Batasi riwayat obrolan (misal: 10 pesan terakhir) untuk menghemat memori
             if (user.chatHistory.length > 10) {
                 user.chatHistory = user.chatHistory.slice(-10);
             }
@@ -549,22 +690,52 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
 
     async handleAdminCommands(message, user, commandName, args) {
         if (!user.isAdmin && commandName !== '/loginadmin') {
-            if (commandName.startsWith('/')) { message.reply("Perintah tidak dikenali. Coba ketik *00*."); }
-            else { await this.getAiResponse(message, user); }
+            if (commandName.startsWith('/')) { 
+                message.reply("Perintah tidak dikenali. Coba ketik *00*."); 
+            }
+            else { 
+                if (this.checkRateLimit(message.from)) {
+                    await this.getAiResponse(message, user);
+                } else {
+                    message.reply("Mohon tunggu sebentar sebelum mengirim pesan lagi ke AI.");
+                }
+            }
             return;
         }
 
         switch (commandName) {
-            case '/loginadmin': this.handleLoginAdmin(message, user, args[0]); break;
-            case '/listusers': if (this.checkAdmin(message, user)) this.handleListUsers(message, user); break;
-            case '/blockuser': if (this.checkAdmin(message, user)) await this.handleBlockUser(message, user, args[0]); break;
-            case '/unblockuser': if (this.checkAdmin(message, user)) await this.handleUnblockUser(message, user, args[0]); break;
-            case '/deleteuser': if (this.checkAdmin(message, user)) await this.handleDeleteUser(message, user, args[0]); break;
-            case '/addtugas': if (this.checkAdmin(message, user)) await this.handleAddTugas(message, user, args); break;
-            case '/listtugas': if (this.checkAdmin(message, user)) this.handleListAllTasks(message, user); break;
-            case '/hapustugas': if (this.checkAdmin(message, user)) await this.handleDeleteTask(message, user, args[0]); break;
-            case '/setbonus': if (this.checkAdmin(message, user)) await this.handleSetBonus(message, user, args[0], args[1]); break;
-            default: if (commandName.startsWith('/')) { message.reply("Perintah admin tidak dikenali."); } break;
+            case '/loginadmin': 
+                this.handleLoginAdmin(message, user, args[0]); 
+                break;
+            case '/listusers': 
+                if (this.checkAdmin(message, user)) this.handleListUsers(message, user); 
+                break;
+            case '/blockuser': 
+                if (this.checkAdmin(message, user)) await this.handleBlockUser(message, user, args[0]); 
+                break;
+            case '/unblockuser': 
+                if (this.checkAdmin(message, user)) await this.handleUnblockUser(message, user, args[0]); 
+                break;
+            case '/deleteuser': 
+                if (this.checkAdmin(message, user)) await this.handleDeleteUser(message, user, args[0]); 
+                break;
+            case '/addtugas': 
+                if (this.checkAdmin(message, user)) await this.handleAddTugas(message, user, args); 
+                break;
+            case '/listtugas': 
+                if (this.checkAdmin(message, user)) this.handleListAllTasks(message, user); 
+                break;
+            case '/hapustugas': 
+                if (this.checkAdmin(message, user)) await this.handleDeleteTask(message, user, args[0]); 
+                break;
+            case '/setbonus': 
+                if (this.checkAdmin(message, user)) await this.handleSetBonus(message, user, args[0], args[1]); 
+                break;
+            default: 
+                if (commandName.startsWith('/')) { 
+                    message.reply("Perintah admin tidak dikenali."); 
+                } 
+                break;
         }
     }
 
@@ -588,7 +759,10 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
     }
     
     async handleBlockUser(message, user, userIdToBlock) {
-        if (!userIdToBlock) { message.reply("Penggunaan: /blockuser <nomor>"); return; }
+        if (!userIdToBlock) { 
+            message.reply("Penggunaan: /blockuser <nomor>"); 
+            return; 
+        }
         const targetId = userIdToBlock.endsWith('@c.us') ? userIdToBlock : `${userIdToBlock}@c.us`;
         if (this.users[targetId]) {
             this.users[targetId].isBlocked = true;
@@ -600,7 +774,10 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
     }
     
     async handleUnblockUser(message, user, userIdToUnblock) {
-        if (!userIdToUnblock) { message.reply("Penggunaan: /unblockuser <nomor>"); return; }
+        if (!userIdToUnblock) { 
+            message.reply("Penggunaan: /unblockuser <nomor>"); 
+            return; 
+        }
         const targetId = userIdToUnblock.endsWith('@c.us') ? userIdToUnblock : `${userIdToUnblock}@c.us`;
         if (this.users[targetId]) {
             this.users[targetId].isBlocked = false;
@@ -612,7 +789,10 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
     }
 
     async handleDeleteUser(message, user, userIdToDelete) {
-        if (!userIdToDelete) { message.reply("Penggunaan: /deleteuser <nomor>"); return; }
+        if (!userIdToDelete) { 
+            message.reply("Penggunaan: /deleteuser <nomor>"); 
+            return; 
+        }
         const targetId = userIdToDelete.endsWith('@c.us') ? userIdToDelete : `${userIdToDelete}@c.us`;
         if (this.users[targetId]) {
             delete this.users[targetId];
@@ -639,14 +819,22 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
     }
 
     handleListAllTasks(message, user) {
-        if (this.tasks.length === 0) { message.reply("Belum ada tugas yang dibuat."); return; }
+        if (this.tasks.length === 0) { 
+            message.reply("Belum ada tugas yang dibuat."); 
+            return; 
+        }
         let taskList = "--- 📝 Semua Tugas ---\n";
-        this.tasks.forEach(task => { taskList += `*ID:* ${task.id} | *Bonus:* ${task.reward} | *Durasi:* ${task.duration} menit\n*Nama:* ${task.name}\n\n`; });
+        this.tasks.forEach(task => { 
+            taskList += `*ID:* ${task.id} | *Bonus:* ${task.reward} | *Durasi:* ${task.duration} menit\n*Nama:* ${task.name}\n\n`; 
+        });
         message.reply(taskList);
     }
     
     async handleDeleteTask(message, user, taskIdStr) {
-        if (!taskIdStr) { message.reply("Penggunaan: /hapustugas <id>"); return; }
+        if (!taskIdStr) { 
+            message.reply("Penggunaan: /hapustugas <id>"); 
+            return; 
+        }
         const taskId = parseInt(taskIdStr);
         const taskIndex = this.tasks.findIndex(t => t.id === taskId);
         if (taskIndex > -1) {
@@ -662,7 +850,7 @@ Riwayat obrolan Anda dengan ALTO telah berhasil dihapus.`;
         const min = parseInt(minStr);
         const max = parseInt(maxStr);
         if (isNaN(min) || isNaN(max) || min > max) {
-            message.reply("Penggunaan salah. Contoh: /setbonus 50 500");
+            message.reply("Penggunaan salah. Contoh: /setbonus 1 50");
             return;
         }
         this.config.dailyBonus = { min, max };
